@@ -27,6 +27,7 @@ class Server:
         # You should not store the information about the same thing in
         # a few different places, it will be hard to maintain and debug
         self.mac_directories = {}
+        self.lock = threading.Lock()
         # UDP server should only be responsible for adding/deleting target MACs
         # all the other operations like target storage and its respective information
         # should be handled by the main program/thread
@@ -50,7 +51,6 @@ class Server:
     def start_server(self, my_data):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_socket.bind((self.ip_address, SERVER_PORT))
-
         print(my_data)
         print(f"Server data: {self.data}")
         print(f"UDP Server up and listening at {self.ip_address}:{SERVER_PORT}")
@@ -59,35 +59,35 @@ class Server:
             message, client_address = server_socket.recvfrom(BUFFER_SIZE)
             print(f"Message from Client {client_address}: {message.decode()}")
             data = json.loads(message.decode())
-            if data["cmd"] == "add":
-                print(f"Adding {data['ip']} to the list")
-                if data["ip"] not in self.macs:
-                    # Use proper locking mechanism for the shared resource
-                    # Adding target should be atomic
-                    self.macs.append(data["ip"])
-                    mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["ip"].replace(':', '_'))
-                    os.makedirs(mac_directory, exist_ok=True)
-                    self.mac_directories[data["ip"]] = mac_directory
-                    response_message = f"IP {data['ip']} successfully added."
-                else:
-                    response_message = f"IP {data['ip']} already exists."
-            elif data["cmd"] == "del":
-                print(f"Removing {data['ip']} from the list")
-                if data["mac"] in self.macs:
-                    self.macs.remove(data["ip"])
-                    mac_directory = self.mac_directories.pop(data["ip"])
-                    response_message = f"IP {data['ip']} successfully removed."
-                else:
-                    response_message = f"IP {data['ip']} not found in the list."
+            response_message = None
 
-            # There is no purpose for this three lines of code
-            self.event.set()
-            if self.event.is_set():
-                print("Event is set")
-            # Response message should be set outside of the if block
-            # Or in if block there sshould an else clause
-            # for handling the case when the command is not add or del
-            server_socket.sendto(response_message.encode(), client_address)
+            with self.lock:
+                if data["cmd"] == "add":
+                    print(f"Adding {data['ip']} to the list")
+                    if data["ip"] not in self.macs:
+                        self.macs.append(data["ip"])
+                        mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["ip"].replace(':', '_'))
+                        os.makedirs(mac_directory, exist_ok=True)
+                        self.mac_directories[data["ip"]] = mac_directory
+                        response_message = f"IP {data['ip']} successfully added."
+                    else:
+                        response_message = f"IP {data['ip']} already exists."
+                elif data["cmd"] == "del":
+                    print(f"Deleting {data['ip']} from the list")
+                    if data["mac"] in self.macs:
+                        self.macs.remove(data["ip"])
+                        mac_directory = self.mac_directories.pop(data["ip"])
+                        response_message = f"IP {data['ip']} successfully removed."
+                    else:
+                        response_message = f"IP {data['ip']} not found in the list."
+                else:
+                    response_message = "Invalid command. Please use 'add' or 'del'."
+            # self.event.set()
+            # if self.event.is_set():
+            #     print("Event is set")
+                  
+            if response_message is not None:
+                server_socket.sendto(response_message.encode(), client_address)
 
     def start(self):
         # You should handle your child threads properly
