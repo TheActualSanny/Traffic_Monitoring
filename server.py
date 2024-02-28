@@ -1,10 +1,11 @@
 import json
 import socket
-from config import SERVER_PORT, BUFFER_SIZE, INTERFACE, BASE_DIRECTORY
+import signal
+from config import PACKETS_PER_FILE, SERVER_PORT, BUFFER_SIZE, INTERFACE, BASE_DIRECTORY
 import time
 from scapy.all import *
 from threading import Thread, Event
-from scapy.all import sniff, ARP, UDP, IP, Ether
+from scapy.all import sniff, ARP, UDP, IP, Ether,TCP
 from datetime import datetime
 import json
 import os
@@ -29,26 +30,17 @@ class Server:
         # UDP server should only be responsible for adding/deleting target MACs
         # all the other operations like target storage and its respective information
         # should be handled by the main program/thread
+        
 
     def packet_handler(self, packet):
-        # You must also habdle TCP traffic
-        if packet.haslayer(UDP):
-            source_mac = packet[Ether].src.lower()
-            # unused variable
-            now = datetime.now()
-            # Why "stringing" twice?
-            str_mac = str(source_mac)
-            # Project descirption specified that you must store the traffic
-            # based on IP adress of the target not the mac
-            if str_mac in self.macs:
+        if packet.haslayer(UDP) or packet.haslayer(TCP):
+            source_ip = packet[IP].src
+            if source_ip in self.macs:
                 print(".", end="", flush=True)
-                # Use proper logging
-                mac_directory = self.mac_directories[str_mac]
-                # Wrpcap
-                wrpcap(f"{mac_directory}/file{self.file_desc}.pcap", packet, append=True)
+                ip_directory = self.mac_directories[source_ip]
+                wrpcap(f"{ip_directory}/file{self.file_desc}.pcap", packet, append=True)
                 self.pkt_count += 1
-                # The number of packets per file should be coming from config
-                if self.pkt_count == 50:
+                if self.pkt_count == PACKETS_PER_FILE:
                     self.pkt_count = 0
                     self.file_desc += 1
 
