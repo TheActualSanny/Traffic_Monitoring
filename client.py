@@ -2,17 +2,16 @@ import sys
 import json
 import argparse
 import socket
-import re  
+import re
 from config import SERVER_PORT
 
-
-def is_valid_mac(mac):
-    mac_pattern = re.compile(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
-    return bool(mac_pattern.match(mac))
+def is_valid_ip(ip):
+    ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+    return bool(ip_pattern.match(ip))
 
 def send_message_to_server(message):
     try:
-        client_ipv4_address = "127.0.0.1"  
+        client_ipv4_address = "127.0.0.1"
         print(f"Sending message to Server {client_ipv4_address}:{SERVER_PORT}")
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -23,34 +22,34 @@ def send_message_to_server(message):
         print(f"Server Response: {decoded_response}")
 
         client_socket.close()
-        
+
     except Exception as e:
         print(f"Error sending message to the Server: {e}")
 
 def arg_parser():
     parser = argparse.ArgumentParser(description='Send commands to the server.')
-    parser.add_argument('-a', metavar="mac", help='add MAC address to the server')
-    parser.add_argument('-d', metavar="mac", help='delete MAC address from the server')
+    parser.add_argument('-a', metavar="ip", help='add IP address to the server')
+    parser.add_argument('-d', metavar="ip", help='delete IP address from the server')
 
     res = parser.parse_args()
     if res.a is not None:
         cmd = "add"
-        mac = res.a
+        ip = res.a
     elif res.d is not None:
         cmd = "del"
-        mac = res.d
+        ip = res.d
     else:
         parser.print_help()
         sys.exit(1)
 
-    if not is_valid_mac(mac):
-        print("Invalid MAC address format. Please use the format: XX:XX:XX:XX:XX:XX")
+    if not is_valid_ip(ip):
+        print("Invalid IP address format. Please use a valid IPv4 address.")
         sys.exit(1)
 
-    return cmd, mac
+    return cmd, ip
 
 if __name__ == "__main__":
-    cmd, mac = arg_parser()
-    command = {"cmd": cmd, "mac": mac}
+    cmd, ip = arg_parser()
+    command = {"cmd": cmd, "ip": ip}
     str_data = json.dumps(command)
     send_message_to_server(str_data)

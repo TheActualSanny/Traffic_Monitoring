@@ -60,25 +60,25 @@ class Server:
             print(f"Message from Client {client_address}: {message.decode()}")
             data = json.loads(message.decode())
             if data["cmd"] == "add":
-                print(f"Adding {data['mac']} to the list")
-                if data["mac"] not in self.macs:
+                print(f"Adding {data['ip']} to the list")
+                if data["ip"] not in self.macs:
                     # Use proper locking mechanism for the shared resource
                     # Adding target should be atomic
-                    self.macs.append(data["mac"])
-                    mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["mac"].replace(':', '_'))
+                    self.macs.append(data["ip"])
+                    mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["ip"].replace(':', '_'))
                     os.makedirs(mac_directory, exist_ok=True)
-                    self.mac_directories[data["mac"]] = mac_directory
-                    response_message = f"MAC {data['mac']} successfully added."
+                    self.mac_directories[data["ip"]] = mac_directory
+                    response_message = f"IP {data['ip']} successfully added."
                 else:
-                    response_message = f"MAC {data['mac']} already exists."
+                    response_message = f"IP {data['ip']} already exists."
             elif data["cmd"] == "del":
-                print(f"Removing {data['mac']} from the list")
+                print(f"Removing {data['ip']} from the list")
                 if data["mac"] in self.macs:
-                    self.macs.remove(data["mac"])
-                    mac_directory = self.mac_directories.pop(data["mac"])
-                    response_message = f"MAC {data['mac']} successfully removed."
+                    self.macs.remove(data["ip"])
+                    mac_directory = self.mac_directories.pop(data["ip"])
+                    response_message = f"IP {data['ip']} successfully removed."
                 else:
-                    response_message = f"MAC {data['mac']} not found in the list."
+                    response_message = f"IP {data['ip']} not found in the list."
 
             # There is no purpose for this three lines of code
             self.event.set()
