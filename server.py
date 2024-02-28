@@ -8,13 +8,7 @@ from scapy.all import sniff, ARP, UDP, IP, Ether
 from datetime import datetime
 import json
 import os
-
-MACS_DIRECTORY = os.path.join(BASE_DIRECTORY, "MACS")
-if not os.path.exists(MACS_DIRECTORY):
-    os.makedirs(MACS_DIRECTORY)
-    
-# This is not recommended practice, you should habdle that outside of this class
-# probably somewhere where you start the whole program    
+from main import TRAFFIC_DIRECTORY
 
 # You should have a "gracefull shutdown" mechanism
 # for your program, so you can stop the server and the sniffer
@@ -79,7 +73,7 @@ class Server:
                     # Use proper locking mechanism for the shared resource
                     # Adding target should be atomic
                     self.macs.append(data["mac"])
-                    mac_directory = os.path.join(MACS_DIRECTORY, data["mac"].replace(':', '_'))
+                    mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["mac"].replace(':', '_'))
                     os.makedirs(mac_directory, exist_ok=True)
                     self.mac_directories[data["mac"]] = mac_directory
                     response_message = f"MAC {data['mac']} successfully added."
