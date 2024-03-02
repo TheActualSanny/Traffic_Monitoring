@@ -28,6 +28,7 @@ class Server:
         # a few different places, it will be hard to maintain and debug
         self.mac_directories = {}
         self.lock = threading.Lock()
+        self.shutdown = False
         # UDP server should only be responsible for adding/deleting target MACs
         # all the other operations like target storage and its respective information
         # should be handled by the main program/thread
@@ -90,18 +91,24 @@ class Server:
                 server_socket.sendto(response_message.encode(), client_address)
 
     def start(self):
-        # You should handle your child threads properly
-        # They should not be let to libe as zombie threads
-        t = Thread(target=self.start_server, args=(self.data,))
-        t.start()
+        
+        server_thread = Thread(target=self.start_server, args=(self.data,))
+        server_thread.daemon = True
+        server_thread.start()
 
         sniff_thread = Thread(target=self.sniff_packets)
+        sniff_thread.daemon = True
         sniff_thread.start()
 
-        print("Server and Sniffer started")
-        t.join()
+        print("Server and Sniffer threads started")
+
+        server_thread.join()
         sniff_thread.join()
 
+
+if __name__ == "__main__":
+    server_instance = Server(INTERFACE, None)
+    server_instance.start()
 
 ###################
 # General comments
