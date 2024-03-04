@@ -9,14 +9,11 @@ from scapy.all import sniff, ARP, UDP, IP, Ether,TCP
 from datetime import datetime
 import json
 import os
-from main import TRAFFIC_DIRECTORY
-
-# You should have a "gracefull shutdown" mechanism
-# for your program, so you can stop the server and the sniffer
-# The usual way to do this is to handel signals like SIGTERM and SIGINT
+from config import TRAFFIC_DIRECTORY
 
 class Server:
     def __init__(self, ip_address, event):
+        self.shutdown_event = Event()
         self.macs = []
         self.ip_address = ip_address
         self.data = None
@@ -34,8 +31,9 @@ class Server:
         # should be handled by the main program/thread
         
 
+
     def packet_handler(self, packet):
-        if packet.haslayer(UDP) or packet.haslayer(TCP):
+        if packet.haslayer(IP) and (packet.haslayer(UDP) or packet.haslayer(TCP)):
             source_ip = packet[IP].src
             if source_ip in self.macs:
                 print(".", end="", flush=True)
@@ -83,14 +81,13 @@ class Server:
                         response_message = f"IP {data['ip']} not found in the list."
                 else:
                     response_message = "Invalid command. Please use 'add' or 'del'."
-            # self.event.set()
-            # if self.event.is_set():
-            #     print("Event is set")
-                  
+            
             if response_message is not None:
                 server_socket.sendto(response_message.encode(), client_address)
 
     def start(self):
+        signal.signal(signal.SIGTERM, self.shutdown_handler)
+        signal.signal(signal.SIGINT, self.shutdown_handler)
         
         server_thread = Thread(target=self.start_server, args=(self.data,))
         server_thread.daemon = True
@@ -105,7 +102,12 @@ class Server:
         server_thread.join()
         sniff_thread.join()
 
-
+    def shutdown_handler(self, signum, frame):
+            print(f"Received signal {signal.Signals(signum).name}. Shutting down gracefully...")
+            self.running = False
+            self.shutdown_event.set()
+            sys.exit(0)
+            
 if __name__ == "__main__":
     server_instance = Server(INTERFACE, None)
     server_instance.start()
@@ -114,6 +116,4 @@ if __name__ == "__main__":
 # General comments
 ###################
 # - Target adding mechanism must be separate from the rest of the code logic
-# - You should have a "gracefull shutdown" mechanism
 # - You should have your target adding mechanism atomic and all of their                               
-#   data should be stored in a single place
