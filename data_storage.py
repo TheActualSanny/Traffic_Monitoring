@@ -24,6 +24,8 @@ def upload_file(bucket, local_file_path, source_destination):
     blob.upload_from_filename(local_file_path)
 
     print(f"Uploaded {local_file_path} to {destination_blob_name}")
+    os.remove(local_file_path)
+    print(f"Deleted local file: {local_file_path}")
 
 def upload_directory_to_bucket(bucket_name, source_destination, credential_path):
     storage_client = storage.Client.from_service_account_json(credential_path)
