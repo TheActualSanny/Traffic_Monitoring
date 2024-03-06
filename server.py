@@ -1,84 +1,47 @@
-
-###################
-# General comments
-###################
-# - Target adding mechanism must be separate from the rest of the code logic
-# - You should have your target adding mechanism atomic and all of their                               
-              
-
-#TODO Revert to mac address as target. create a dictionary to store mac and ip address, where it will be tracket if ip address of mac is change,
-#If ip address of mac is change, then the traffic will be stored in a same directory with the new ip address name and time. 
-#In short monitor traffic using IP.
-
-#Threading part should be done using airflow. airflow should upload the pcap file to google cloud storage.
-
-import json
-import socket
-import signal
+from dataclasses import dataclass, field
 import threading
+from typing import Any
 import os
-from scapy.all import *
 import sys
 import json
 import socket
 import signal
-from config import PACKETS_PER_FILE, SERVER_PORT, BUFFER_SIZE, INTERFACE, BASE_DIRECTORY
-import time
-from scapy.all import *
-from threading import Thread, Event
-from scapy.all import sniff, ARP, UDP, IP, Ether,TCP
 from datetime import datetime
-import json
-import os
-from config import TRAFFIC_DIRECTORY
+from scapy.all import sniff, wrpcap, Ether, IP, UDP, TCP
+from config import SERVER_PORT, BUFFER_SIZE, INTERFACE, TRAFFIC_DIRECTORY, PACKETS_PER_FILE
+from target_manager import TargetManager
 
-import threading
-import json
-import socket
-import signal
-from config import PACKETS_PER_FILE, SERVER_PORT, BUFFER_SIZE, INTERFACE, BASE_DIRECTORY
-from scapy.all import *
-from threading import Thread, Event
-from datetime import datetime
-import os
-from config import TRAFFIC_DIRECTORY
-
-
+@dataclass
 class Server:
-    def __init__(self, ip_address, event):
-        self.shutdown_event = threading.Event()
-        self.macs = set()
-        self.ip_address = ip_address
-        self.data = None
-        self.running = True
-        self.pkt_count = 0
-        self.mac_directories = {}
-        self.lock = threading.Lock()
+    ip_address: str
+    event: threading.Event
+    target_manager: TargetManager
+    shutdown_event: threading.Event = field(default_factory=threading.Event)
+    data: Any = None
+    running: bool = True
+    pkt_count: int = 0
 
     def packet_handler(self, packet):
         if packet.haslayer(IP) and (packet.haslayer(UDP) or packet.haslayer(TCP)):
-            source_mac = packet[Ether].src
-            source_ip = packet[IP].src
-            dicti = {source_mac:source_ip}
-            
-            with self.lock:
-                if source_mac in self.macs:
-                    ip_directory = self.mac_directories[source_mac]
+            source_mac, source_ip = packet[Ether].src, packet[IP].src
+            data_dict = {source_mac: source_ip}
+
+            with self.target_manager.lock:
+                if source_mac in self.target_manager.macs and self.pkt_count <  int(PACKETS_PER_FILE):
+                    ip_directory = self.target_manager.mac_directories[source_mac]
                     datetime_now = datetime.now()
                     datetime_directory = datetime_now.strftime("%Y-%m-%d")
-                    
-                    if self.pkt_count != 1000:
-                        print("aaa", dicti)
-                        
-                        pcap_directory = os.path.join(ip_directory, datetime_directory)
-                        os.makedirs(pcap_directory, exist_ok=True)
-                        
-                        wrpcap(f"{pcap_directory}/{source_ip} {datetime_now}.pcap", packet, append=True)
-                        self.pkt_count += 1
-                    else:
-                        self.running = False
-                        print("Reached 10 packets. Stopping further packet capture.")
-                        return
+                    print("Received packet data:", data_dict)
+
+                    pcap_directory = os.path.join(ip_directory, datetime_directory)
+                    os.makedirs(pcap_directory, exist_ok=True)
+
+                    pcap_filename = f"{source_ip}_{datetime_now}.pcap"
+                    wrpcap(os.path.join(pcap_directory, pcap_filename), packet, append=True)
+                    self.pkt_count += 1
+                elif self.pkt_count == PACKETS_PER_FILE:
+                    self.running = False
+                    print(f"Reached {PACKETS_PER_FILE} packets. Stopping further packet capture.")
 
     def sniff_packets(self):
         sniff(prn=self.packet_handler, store=0, iface=INTERFACE)
@@ -90,36 +53,29 @@ class Server:
         print(f"Server data: {self.data}")
         print(f"UDP Server up and listening at {self.ip_address}:{SERVER_PORT}")
 
-        while self.running:
-            message, client_address = server_socket.recvfrom(BUFFER_SIZE)
-            print(f"Message from Client {client_address}: {message.decode()}")
-            data = json.loads(message.decode())
-            response_message = None
+        while not self.shutdown_event.is_set():
+            try:
+                message, client_address = server_socket.recvfrom(BUFFER_SIZE)
+                print(f"Message from Client {client_address}: {message.decode()}")
+                data = json.loads(message.decode())
+                response_message = self.process_client_command(data)
 
-            with self.lock:
-                if data["cmd"] == "add":
-                    print(f"Adding {data['mac']} to the list")
-                    if data["mac"] not in self.macs:
-                        self.macs.add(data["mac"])
-                        mac_directory = os.path.join(TRAFFIC_DIRECTORY, data["mac"].replace(':', '_'))
-                        os.makedirs(mac_directory, exist_ok=True)
-                        self.mac_directories[data["mac"]] = mac_directory
-                        response_message = f"MAC {data['mac']} successfully added."
-                    else:
-                        response_message = f"MAC {data['mac']} already exists."
-                elif data["cmd"] == "del":
-                    print(f"Deleting {data['mac']} from the list")
-                    if data["mac"] in self.macs:
-                        self.macs.remove(data["mac"])
-                        mac_directory = self.mac_directories.pop(data["mac"])
-                        response_message = f"MAC {data['mac']} successfully removed."
-                    else:
-                        response_message = f"MAC {data['mac']} not found in the list."
-                else:
-                    response_message = "Invalid command. Please use 'add' or 'del'."
+                if response_message:
+                    server_socket.sendto(response_message.encode(), client_address)
 
-            if response_message is not None:
-                server_socket.sendto(response_message.encode(), client_address)
+            except socket.error as e:
+                print(f"Socket error: {e}")
+
+    def process_client_command(self, data):
+        command = data.get("cmd")
+        mac = data.get("mac")
+        if command and mac:
+            if command == "add":
+                return self.target_manager.add_target(mac)
+            elif command == "del":
+                return self.target_manager.remove_target(mac)
+
+        return "Invalid command. Please use 'add' or 'del'."
 
     def start(self):
         signal.signal(signal.SIGTERM, self.shutdown_handler)
@@ -146,13 +102,3 @@ class Server:
         self.running = False
         self.shutdown_event.set()
         sys.exit(0)
-
-if __name__ == "__main__":
-    server_instance = Server(INTERFACE, None)
-    server_instance.start()
-
-###################
-# General comments
-###############
-# - Target adding mechanism must be separate from the rest of the code logic
-# - You should have your target adding mechanism atomic and all of their                               

@@ -44,8 +44,11 @@ def upload_directory_to_bucket(bucket_name, source_destination, credential_path)
             observer.stop()
         observer.join()
 
-if __name__ == "__main__":
+
+def call_func():
     GCP_BUCKET_NAME = BUCKET_NAME
     GCP_SOURCE_DESTINATION = SOURCE_DESTINATION
     GCP_CREDENTIAL_PATH = CREDENTIAL_PATH
     upload_directory_to_bucket(GCP_BUCKET_NAME, GCP_SOURCE_DESTINATION, GCP_CREDENTIAL_PATH)
+
+call_func()
