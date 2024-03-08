@@ -35,8 +35,8 @@ class Server:
             else:
                 print(f"No ARP response for MAC {mac_address}")
 
-        except Exception as e:
-            print(f"Error getting IP from MAC: {e}")
+        except Exception as exception:
+            print(f"Error getting IP from MAC: {exception}")
 
         return None
 
@@ -83,7 +83,7 @@ class Server:
 
             except socket.error as e:
                 print(f"Socket error: {e}")
-
+            
     def process_client_command(self, data):
         command = data.get("cmd")
         mac = data.get("mac")
