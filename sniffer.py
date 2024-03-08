@@ -11,9 +11,6 @@ def packet_handler(packet):
     if packet.haslayer(UDP):
         source_mac = packet[Ether].src.lower()
         now = datetime.now()
-        # source_ip = packet[UDP].psrc
-        # target_storage.register_target(source_mac, source_ip)
-        # print(f"MAC: {source_mac} time: {now}, source: {packet[IP].src}, destination:{packet[IP].dst}, len: {packet[UDP].len}")
         write(packet)
 
 def start_sniffer():

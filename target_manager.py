@@ -13,7 +13,7 @@ class TargetManager:
         with self.lock:
             if mac not in self.macs:
                 self.macs.add(mac)
-                mac_directory = os.path.join(TRAFFIC_DIRECTORY, mac.replace(':', '_'))
+                mac_directory = os.path.join(TRAFFIC_DIRECTORY)
                 os.makedirs(mac_directory, exist_ok=True)
                 self.mac_directories[mac] = mac_directory
                 return f"MAC {mac} successfully added."

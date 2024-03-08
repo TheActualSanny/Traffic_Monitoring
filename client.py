@@ -20,7 +20,7 @@ class CommandSender:
 
             client_socket.sendto(message.encode(), (CLIENT_IPV4_ADDRESS, SERVER_PORT))
 
-            response, _ = client_socket.recvfrom(1024)
+            response = client_socket.recvfrom(1024)
             decoded_response = response.decode()
             print(f"Server Response: {decoded_response}")
 

@@ -4,11 +4,13 @@ from google.cloud import storage
 from config import MAX_WORKERS, BUCKET_NAME, CREDENTIAL_PATH, SOURCE_DESTINATION
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from threading import Event
 
 class FileEventHandler(FileSystemEventHandler):
-    def __init__(self, bucket, source_destination):
+    def __init__(self, bucket, source_destination, shutdown_event):
         self.bucket = bucket
         self.source_destination = source_destination
+        self.shutdown_event = shutdown_event
 
     def on_created(self, event):
         if event.is_directory:
@@ -27,28 +29,33 @@ def upload_file(bucket, local_file_path, source_destination):
     os.remove(local_file_path)
     print(f"Deleted local file: {local_file_path}")
 
-def upload_directory_to_bucket(bucket_name, source_destination, credential_path):
+def upload_directory_to_bucket(bucket_name, source_destination, credential_path, shutdown_event):
     storage_client = storage.Client.from_service_account_json(credential_path)
     bucket = storage_client.get_bucket(bucket_name)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         observer = Observer()
-        event_handler = FileEventHandler(bucket, source_destination)
+        event_handler = FileEventHandler(bucket, source_destination, shutdown_event)
         observer.schedule(event_handler, source_destination, recursive=True)
         observer.start()
 
         try:
-            while True:
-                pass
+            shutdown_event.wait()  
         except KeyboardInterrupt:
+            shutdown_event.set()
+        finally:
             observer.stop()
-        observer.join()
-
+            observer.join()
 
 def call_func():
     GCP_BUCKET_NAME = BUCKET_NAME
     GCP_SOURCE_DESTINATION = SOURCE_DESTINATION
     GCP_CREDENTIAL_PATH = CREDENTIAL_PATH
-    upload_directory_to_bucket(GCP_BUCKET_NAME, GCP_SOURCE_DESTINATION, GCP_CREDENTIAL_PATH)
+    shutdown_event = Event()
+
+    try:
+        upload_directory_to_bucket(GCP_BUCKET_NAME, GCP_SOURCE_DESTINATION, GCP_CREDENTIAL_PATH, shutdown_event)
+    except KeyboardInterrupt:
+        shutdown_event.set()
 
 call_func()
