@@ -8,14 +8,14 @@ import tempfile
 import os
 import re
 
-from dag_functions.extract_functions import get_variables
+from helper.retrieve_variables import get_variables
 
 
 def download_pcap(ti, **kwargs):
+    variables = get_variables()
     conf_from_trigger = kwargs['dag_run'].conf
     object_name = conf_from_trigger['new_filename']
 
-    variables = get_variables()
     gcs_hook = GCSHook(gcp_conn_id=variables['CONN_ID'])
 
     file_contents = gcs_hook.download(bucket_name=variables['BUCKET_NAME'], object_name=object_name)
@@ -23,6 +23,7 @@ def download_pcap(ti, **kwargs):
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     temp_file.write(file_contents)
     temp_file.close()
+
     ti.xcom_push(key='TEMP_FILENAME', value=temp_file.name)
     ti.xcom_push(key="FILENAME", value=object_name)
 

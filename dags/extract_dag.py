@@ -6,18 +6,21 @@ from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime
 
 from dag_functions.extract_functions import create_dataset_and_table, extract_pcap_files
-from helper.airflow_config import DEFAULT_ARGS
+
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': True
+}
 
 
 with DAG(
         dag_id='extract_files',
         start_date=datetime(2024, 3, 1),
-        default_args=DEFAULT_ARGS,
-        # schedule=None,
+        default_args=default_args,
         schedule_interval='*/10 * * * *',
         catchup=False,
-        # render_template_as_native_obj=True,
-        tags=["extract"],
+        # schedule=None
 ) as dag:
     create_table = PythonOperator(
         task_id='create_table',
@@ -31,10 +34,10 @@ with DAG(
         provide_context=True
     )
 
-    backup_files = TriggerDagRunOperator(
-        task_id='backup_files',
-        trigger_dag_id="backup_files",
+    backup_pcap_files = TriggerDagRunOperator(
+        task_id='backup_pcap_files',
+        trigger_dag_id='backup_files',
         trigger_rule=TriggerRule.ALL_SUCCESS
     )
 
-    create_table >> extract_pcap >> backup_files
+    create_table >> extract_pcap >> backup_pcap_files

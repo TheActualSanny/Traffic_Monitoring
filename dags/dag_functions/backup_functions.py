@@ -3,9 +3,10 @@ from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 from google.cloud.storage import Bucket
 
 from datetime import datetime
+import time
 import re
 
-from dag_functions.extract_functions import get_variables
+from helper.retrieve_variables import get_variables
 
 
 def create_backup_bucket():
@@ -20,7 +21,7 @@ def create_backup_bucket():
     for bucket in project_buckets:
         if bucket.name == backup_bucket:
             print(f"{backup_bucket} bucket already exists ")
-            return True
+            return
 
     # create a bucket if it doesn't already exist
     gcs_hook.create_bucket(bucket_name=backup_bucket,
@@ -32,12 +33,13 @@ def create_backup_bucket():
     bucket.patch()
 
     print(f"created a backup bucket called {backup_bucket}")
+    time.sleep(5)
 
 
-def remove_duplicate_data():
+def get_max_date(ti):
+    # if this task fails, that means there was no data in bigquery, meaning nothing needed to be moved to backup
     variables = get_variables()
 
-    gcs_hook = GCSHook(gcp_conn_id=variables['CONN_ID'])
     bigquery_hook = BigQueryHook(variables['CONN_ID'], use_legacy_sql=False)
 
     # get max date from bigquery table
@@ -47,6 +49,15 @@ def remove_duplicate_data():
     max_date = bigquery_hook.get_first(sql_query)[0]
     max_date = max_date.split('+')[0]  # remove timezone
     max_date = datetime.strptime(max_date, "%Y-%m-%d %H:%M:%S.%f")
+
+    ti.xcom_push(key='MAX_DATE', value=max_date)
+
+
+def remove_duplicate_data(ti):
+    variables = get_variables()
+    max_date = ti.xcom_pull(key='MAX_DATE', task_ids='retrieve_max_date')
+
+    gcs_hook = GCSHook(gcp_conn_id=variables['CONN_ID'])
 
     # get filenames from bucket
     blobs = gcs_hook.list(bucket_name=variables['BUCKET_NAME'])
