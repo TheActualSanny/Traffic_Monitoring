@@ -1,6 +1,8 @@
+from tempfile import NamedTemporaryFile
 from dataclasses import dataclass, field
 import threading
 from typing import Any
+import io
 import os
 import sys
 import json
@@ -8,8 +10,15 @@ import socket
 import signal
 from datetime import datetime
 from scapy.all import sniff, wrpcap, Ether, IP, UDP, TCP, srp, ARP
-from config import SERVER_PORT, BUFFER_SIZE, INTERFACE, NETWORK_RANGE, DEFAULT_MAC, PACKETS_PER_FILE
+from config import SERVER_PORT, CREDENTIAL_PATH, BUCKET_NAME, BUFFER_SIZE, INTERFACE, NETWORK_RANGE, BROADCAST_MAC, PACKETS_PER_FILE
 from target_manager import TargetManager
+from google.cloud import storage
+
+
+#TODO 1: Add loging.
+#TODO 2: Add docstrings.
+#TODO 3: Add type hints.
+
 
 @dataclass
 class Server:
@@ -24,7 +33,7 @@ class Server:
     @staticmethod
     def get_ip_by_mac(mac_address):
         try:
-            arp_request = Ether(dst=DEFAULT_MAC) / ARP(pdst=NETWORK_RANGE, hwdst=mac_address)
+            arp_request = Ether(dst=BROADCAST_MAC) / ARP(pdst=NETWORK_RANGE, hwdst=mac_address)
             arp_response, _ = srp(arp_request, timeout=1, verbose=0)
 
             if arp_response:
@@ -47,21 +56,36 @@ class Server:
 
             with self.target_manager.lock:
                 if source_mac in self.target_manager.macs and self.pkt_count < int(PACKETS_PER_FILE):
-
-                    ip_directory = self.target_manager.mac_directories[source_mac]
                     datetime_now = datetime.now()
                     datetime_directory = datetime_now.strftime("%Y-%m-%d")
                     print("Received packet data:", data_dict)
 
-                    mac_directory = os.path.join(ip_directory, source_mac)
-                    os.makedirs(mac_directory, exist_ok=True)
+                    self.upload_packet_to_cloud_storage(packet, source_mac, datetime_directory)
 
-                    pcap_directory = os.path.join(mac_directory, datetime_directory)
-                    os.makedirs(pcap_directory, exist_ok=True)
-
-                    pcap_filename = f"{source_ip} {datetime_now}.pcap"
-                    wrpcap(os.path.join(pcap_directory, pcap_filename), packet, append=True)
                     self.pkt_count += 1
+
+    def upload_packet_to_cloud_storage(self, packet, source_mac, datetime_directory):
+        try:
+            storage_client = storage.Client.from_service_account_json(CREDENTIAL_PATH)
+            bucket = storage_client.get_bucket(BUCKET_NAME)
+
+            with NamedTemporaryFile(delete=False, suffix=".pcap") as temp_file:
+                temp_filename = temp_file.name
+                temp_file.close()  # 
+
+                wrpcap(temp_filename, [packet]) 
+
+                with open(temp_filename, "rb") as file:
+                    packet_bytes = file.read()
+
+                blob_name = f"{source_mac}/{datetime_directory}/{datetime.now()}.pcap"
+                blob = bucket.blob(blob_name)
+                blob.upload_from_string(packet_bytes, content_type='application/octet-stream')
+
+                print(f"Uploaded packet data to {blob_name}")
+
+        except Exception as e:
+            print(f"Error uploading packet data: {e}")
 
     def sniff_packets(self):
         sniff(prn=self.packet_handler, store=0, iface=INTERFACE)
@@ -83,7 +107,7 @@ class Server:
 
             except socket.error as e:
                 print(f"Socket error: {e}")
-            
+
     def process_client_command(self, data):
         command = data.get("cmd")
         mac = data.get("mac")
@@ -115,7 +139,7 @@ class Server:
         except KeyboardInterrupt:
             self.shutdown_handler(signal.SIGINT, None)
 
-    def shutdown_handler(self, signum):
+    def shutdown_handler(self, signum, frame):
         print(f"Received signal {signal.Signals(signum).name}. Shutting down gracefully...")
         self.running = False
         self.shutdown_event.set()

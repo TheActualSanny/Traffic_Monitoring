@@ -3,7 +3,7 @@ import json
 import argparse
 import socket
 import re
-from config import SERVER_PORT, CLIENT_IPV4_ADDRESS
+from config import SERVER_PORT, LOOPBACK_ADDRESS
 
 class CommandSender:
     
@@ -15,10 +15,10 @@ class CommandSender:
     @staticmethod
     def send_message_to_server(message):
         try:
-            print(f"Sending message to Server {CLIENT_IPV4_ADDRESS}:{SERVER_PORT}")
+            print(f"Sending message to Server {LOOPBACK_ADDRESS}:{SERVER_PORT}")
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-            client_socket.sendto(message.encode(), (CLIENT_IPV4_ADDRESS, SERVER_PORT))
+            client_socket.sendto(message.encode(), (LOOPBACK_ADDRESS, SERVER_PORT))
 
             response, _ = client_socket.recvfrom(1024)
             decoded_response = response.decode()
