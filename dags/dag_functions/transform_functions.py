@@ -1,4 +1,3 @@
-from airflow.models.variable import Variable
 from airflow.providers.google.cloud.transfers.gcs_to_local import GCSHook
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
@@ -9,7 +8,7 @@ import tempfile
 import os
 import re
 
-from helper.extract_functions import get_variables
+from dag_functions.extract_functions import get_variables
 
 
 def download_pcap(ti, **kwargs):
@@ -35,12 +34,14 @@ def transform_and_upload(ti):
     filename = ti.xcom_pull(key='TEMP_FILENAME', task_ids='download_pcap_files')
     file_path = ti.xcom_pull(key='FILENAME', task_ids='download_pcap_files')
 
+    try:
+        packets = rdpcap(filename)
+        data = []
+    finally:
+        os.unlink(filename)
+
     datetime_pattern = r'\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d+'
     datetime_match = re.search(datetime_pattern, file_path).group()
-
-    packets = rdpcap(filename)
-
-    data = []
 
     for packet in packets:
         source_mac = packet[Ether].src.lower()
@@ -62,8 +63,6 @@ def transform_and_upload(ti):
             'DESTINATION_IP': destination_ip,
             'PACKET_LENGTH': packet_length,
         })
-
-    os.unlink(filename)
 
     bigquery_hook.insert_all(
         project_id=variables['PROJECT_ID'],

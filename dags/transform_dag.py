@@ -3,20 +3,16 @@ from airflow.operators.python import PythonOperator
 
 from datetime import datetime
 
-from helper.transform_functions import download_pcap, transform_and_upload
+from dag_functions.transform_functions import download_pcap, transform_and_upload
+from helper.airflow_config import DEFAULT_ARGS
 
-
-default_args = {
-    'owner': 'barbare',
-    'depends_on_past': False
-}
 
 with DAG(
         dag_id='bucket_to_bigquery',
         start_date=datetime(2024, 3, 1),
-        default_args=default_args,
+        default_args=DEFAULT_ARGS,
         schedule=None,
-        render_template_as_native_obj=True,
+        # render_template_as_native_obj=True,
         tags=["etl"]
 ) as dag:
     downlaod_pcap_files = PythonOperator(

@@ -1,30 +1,27 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.utils.trigger_rule import TriggerRule
 
 from datetime import datetime
 
-from helper.extract_functions import create_bigquery_table, extract_pcap_files
+from dag_functions.extract_functions import create_dataset_and_table, extract_pcap_files
+from helper.airflow_config import DEFAULT_ARGS
 
-
-default_args = {
-    'owner': 'barbare',
-    'depends_on_past': False
-}
 
 with DAG(
         dag_id='extract_files',
         start_date=datetime(2024, 3, 1),
-        default_args=default_args,
+        default_args=DEFAULT_ARGS,
         # schedule=None,
         schedule_interval='*/10 * * * *',
         catchup=False,
-        render_template_as_native_obj=True,
-        tags=["extract_pcaps"],
+        # render_template_as_native_obj=True,
+        tags=["extract"],
 ) as dag:
     create_table = PythonOperator(
         task_id='create_table',
-        python_callable=create_bigquery_table,
+        python_callable=create_dataset_and_table,
         provide_context=True
     )
 
@@ -34,4 +31,10 @@ with DAG(
         provide_context=True
     )
 
-    create_table >> extract_pcap
+    backup_files = TriggerDagRunOperator(
+        task_id='backup_files',
+        trigger_dag_id="backup_files",
+        trigger_rule=TriggerRule.ALL_SUCCESS
+    )
+
+    create_table >> extract_pcap >> backup_files

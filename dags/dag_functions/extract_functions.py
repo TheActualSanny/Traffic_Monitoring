@@ -6,7 +6,7 @@ from airflow.api.common.trigger_dag import trigger_dag
 from datetime import datetime
 import time
 
-from helper.table_config import TABLE_SCHEMA, TIME_PARTITIONING
+from helper.airflow_config import TABLE_SCHEMA, TIME_PARTITIONING
 
 
 def get_variables():
@@ -17,16 +17,21 @@ def get_variables():
     return variables
 
 
-def create_bigquery_table():
+def create_dataset_and_table():
     variables = get_variables()
     hook = BigQueryHook(variables['CONN_ID'])
+
+    hook.create_empty_dataset(project_id=variables["PROJECT_ID"],
+                              dataset_id=variables["DATASET_ID"],
+                              location='US',
+                              exists_ok=True)
 
     hook.create_empty_table(project_id=variables["PROJECT_ID"],
                             dataset_id=variables["DATASET_ID"],
                             table_id=variables["TABLE_ID"],
                             schema_fields=variables["TABLE_SCHEMA"],
-                            time_partitioning=variables["TIME_PARTITIONING"]
-                            )
+                            time_partitioning=variables["TIME_PARTITIONING"],
+                            exists_ok=True)
 
 
 def trigger_transform_dag(blob_conf):
@@ -37,8 +42,9 @@ def extract_pcap_files():
     variables = get_variables()
     gcs_hook = GCSHook(gcp_conn_id=variables['CONN_ID'])
 
-    blobs = gcs_hook.list(variables['BUCKET_NAME'])
+    blobs = gcs_hook.list(bucket_name=variables['BUCKET_NAME'])
 
     for blob in blobs:
-       trigger_transform_dag({"new_filename": blob})
-       time.sleep(3)
+        if blob.endswith(".pcap"):
+            trigger_transform_dag({"new_filename": blob})
+            time.sleep(5)
