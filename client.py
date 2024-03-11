@@ -3,53 +3,64 @@ import json
 import argparse
 import socket
 import re
-from config import SERVER_PORT
+from config import SERVER_PORT, CLIENT_IPV4_ADDRESS
 
-def is_valid_ip(ip):
-    ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
-    return bool(ip_pattern.match(ip))
+class CommandSender:
+    
+    @staticmethod
+    def is_valid_mac(mac):
+        mac_pattern = re.compile(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
+        return bool(mac_pattern.match(mac))
 
-def send_message_to_server(message):
-    try:
-        client_ipv4_address = "127.0.0.1"
-        print(f"Sending message to Server {client_ipv4_address}:{SERVER_PORT}")
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    @staticmethod
+    def send_message_to_server(message):
+        try:
+            print(f"Sending message to Server {CLIENT_IPV4_ADDRESS}:{SERVER_PORT}")
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        client_socket.sendto(message.encode(), (client_ipv4_address, SERVER_PORT))
+            client_socket.sendto(message.encode(), (CLIENT_IPV4_ADDRESS, SERVER_PORT))
 
-        response, _ = client_socket.recvfrom(1024)
-        decoded_response = response.decode()
-        print(f"Server Response: {decoded_response}")
+            response, _ = client_socket.recvfrom(1024)
+            decoded_response = response.decode()
+            print(f"Server Response: {decoded_response}")
 
-        client_socket.close()
+            client_socket.close()
 
-    except Exception as e:
-        print(f"Error sending message to the Server: {e}")
+        except Exception as exception:
+            print(f"Error sending message to the Server: {exception}")
 
-def arg_parser():
-    parser = argparse.ArgumentParser(description='Send commands to the server.')
-    parser.add_argument('-a', metavar="ip", help='add IP address to the server')
-    parser.add_argument('-d', metavar="ip", help='delete IP address from the server')
+    @staticmethod
+    def arg_parser():
+        parser = argparse.ArgumentParser(description='Send commands to the server.')
+        parser.add_argument('-a', metavar="mac", help='add MAC address to the server')
+        parser.add_argument('-d', metavar="mac", help='delete MAC address from the server')
 
-    res = parser.parse_args()
-    if res.a is not None:
-        cmd = "add"
-        ip = res.a
-    elif res.d is not None:
-        cmd = "del"
-        ip = res.d
-    else:
-        parser.print_help()
-        sys.exit(1)
+        res = parser.parse_args()
+        if res.a is not None:
+            cmd = "add"
+            mac = res.a
 
-    if not is_valid_ip(ip):
-        print("Invalid IP address format. Please use a valid IPv4 address.")
-        sys.exit(1)
+        elif res.d is not None:
+            cmd = "del"
+            mac = res.d
 
-    return cmd, ip
+        else:
+            parser.print_help()
+            sys.exit(1)
+
+        if not CommandSender.is_valid_mac(mac):
+            print("Invalid MAC address format. Please use the format: XX:XX:XX:XX:XX:XX")
+            sys.exit(1)
+
+        return cmd, mac
+
+    def run(self):
+        cmd, mac = CommandSender.arg_parser()
+        command = {"cmd": cmd, "mac": mac}
+        str_data = json.dumps(command)
+        CommandSender.send_message_to_server(str_data)
+
 
 if __name__ == "__main__":
-    cmd, ip = arg_parser()
-    command = {"cmd": cmd, "ip": ip}
-    str_data = json.dumps(command)
-    send_message_to_server(str_data)
+    sender = CommandSender()
+    sender.run()
