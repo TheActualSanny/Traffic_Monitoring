@@ -11,7 +11,10 @@ import re
 from helper.retrieve_variables import get_variables
 
 
-def download_pcap(ti, **kwargs):
+def download_pcap(ti, **kwargs) -> None:
+    """ Function retrieves a filename from dag_run configuration, connects to cloud storage
+    using an Airflow storage hook, downloads file contents, and stores it in a temporary file. """
+
     variables = get_variables()
     conf_from_trigger = kwargs['dag_run'].conf
     object_name = conf_from_trigger['new_filename']
@@ -20,6 +23,7 @@ def download_pcap(ti, **kwargs):
 
     file_contents = gcs_hook.download(bucket_name=variables['BUCKET_NAME'], object_name=object_name)
 
+    # create a temporary file, using pcap contents
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     temp_file.write(file_contents)
     temp_file.close()
@@ -28,7 +32,11 @@ def download_pcap(ti, **kwargs):
     ti.xcom_push(key="FILENAME", value=object_name)
 
 
-def transform_and_upload(ti):
+def transform_and_upload(ti) -> None:
+    """ Function reads the passed temporary file, transforms and uploads it to a BigQuery table.
+    If file datetime is invalid task will fail, this file will later on be moved to 'invalid' folder
+    in the backup bucket. """
+
     variables = get_variables()
     bigquery_hook = BigQueryHook(gcp_conn_id=variables['CONN_ID'])
 
@@ -39,11 +47,13 @@ def transform_and_upload(ti):
         packets = rdpcap(filename)
         data = []
     finally:
+        # making sure temporary file gets deleted
         os.unlink(filename)
 
     datetime_pattern = r'\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d+'
     datetime_match = re.search(datetime_pattern, file_path).group()
 
+    # iterate though packets transforming them one by one
     for packet in packets:
         source_mac = packet[Ether].src.lower()
         source_ip = packet[IP].src
@@ -65,6 +75,7 @@ def transform_and_upload(ti):
             'PACKET_LENGTH': packet_length,
         })
 
+    # insert all the transformed data to the BigQuery table
     bigquery_hook.insert_all(
         project_id=variables['PROJECT_ID'],
         dataset_id=variables['DATASET_ID'],

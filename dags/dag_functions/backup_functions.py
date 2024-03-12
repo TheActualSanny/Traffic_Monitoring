@@ -9,7 +9,10 @@ import re
 from helper.retrieve_variables import get_variables
 
 
-def create_backup_bucket():
+def create_backup_bucket() -> None:
+    """ Function creates a backup bucket, with a lifecycle of 2 weeks
+    if it doesn't already exist. """
+
     variables = get_variables()
     backup_bucket = variables['BACKUP_ID']
 
@@ -33,19 +36,25 @@ def create_backup_bucket():
     bucket.patch()
 
     print(f"created a backup bucket called {backup_bucket}")
+
+    # making sure that table will be created for the next tasks successful run
     time.sleep(5)
 
 
-def get_max_date(ti):
-    # if this task fails, that means there was no data in bigquery, meaning nothing needed to be moved to backup
+def get_max_date(ti) -> None:
+    """ Function retrieves max_date from TIMESTAMP column of bigquery table
+    and passes it to the next task. This task failing indicates that the BigQuery table was empty,
+    meaning no files needed to be moved to the backup bucket. """
+
     variables = get_variables()
 
     bigquery_hook = BigQueryHook(variables['CONN_ID'], use_legacy_sql=False)
 
-    # get max date from bigquery table
+    # query to get max date from bigquery table
     sql_query = (f"SELECT CAST(MAX(TIMESTAMP) AS STRING) AS max_date "
                  f"FROM `{variables['PROJECT_ID']}.{variables['DATASET_ID']}.{variables['TABLE_ID']}`")
 
+    # turn max_date into a datetime object
     max_date = bigquery_hook.get_first(sql_query)[0]
     max_date = max_date.split('+')[0]  # remove timezone
     max_date = datetime.strptime(max_date, "%Y-%m-%d %H:%M:%S.%f")
@@ -53,7 +62,11 @@ def get_max_date(ti):
     ti.xcom_push(key='MAX_DATE', value=max_date)
 
 
-def remove_duplicate_data(ti):
+def remove_duplicate_data(ti) -> None:
+    """ Function compares file creation dates to max_date from BigQuery table to find files
+    that were already transformed and uploaded to Bigquery and moves these files to the backup bucket.
+    Files with invalid filenames are moved to a new folder called 'invalid' in the backup bucket.  """
+
     variables = get_variables()
     max_date = ti.xcom_pull(key='MAX_DATE', task_ids='retrieve_max_date')
 
@@ -66,6 +79,7 @@ def remove_duplicate_data(ti):
     for blob in blobs:
         destination_filename = blob
 
+        # check if filename is valid
         file_datetime_match = re.search(datetime_pattern, blob)
         if file_datetime_match:
             file_datetime = datetime.strptime(file_datetime_match.group(), "%Y-%m-%d %H:%M:%S.%f")
@@ -73,7 +87,7 @@ def remove_duplicate_data(ti):
             file_datetime = max_date
             destination_filename = "invalid/" + destination_filename
 
-        # if file was already uploaded to bigquery move it to a backup bucket
+        # move transformed files to a backup bucket
         if blob.endswith(".pcap") and file_datetime <= max_date:
                 gcs_hook.copy(source_bucket=variables['BUCKET_NAME'],
                               source_object=blob,
