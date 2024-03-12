@@ -20,10 +20,9 @@ def create_backup_bucket() -> None:
     conn = gcs_hook.get_conn()
     project_buckets = conn.list_buckets()
 
-    # check if bucket already exists
+    # if bucket exists mark task as successful
     for bucket in project_buckets:
         if bucket.name == backup_bucket:
-            print(f"{backup_bucket} bucket already exists ")
             return
 
     # create a bucket if it doesn't already exist
@@ -34,8 +33,6 @@ def create_backup_bucket() -> None:
     bucket = Bucket(conn, backup_bucket)
     bucket.add_lifecycle_delete_rule(age=14)
     bucket.patch()
-
-    print(f"created a backup bucket called {backup_bucket}")
 
     # making sure that table will be created for the next tasks successful run
     time.sleep(5)

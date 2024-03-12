@@ -3,6 +3,7 @@ import threading
 from dataclasses import dataclass, field
 from config import TRAFFIC_DIRECTORY
 
+
 @dataclass
 class TargetManager:
     """

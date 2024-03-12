@@ -15,6 +15,13 @@ from target_manager import TargetManager
 from configparser import ConfigParser
 from google.cloud import storage
 
+import logging
+from traffic_logger import logger_setup
+
+logger_setup()
+logger = logging.getLogger(__name__)
+
+
 
 @dataclass
 class Server:
@@ -45,13 +52,13 @@ class Server:
             if arp_response:
                 for packet in arp_response:
                     response_ip = packet[ARP].psrc
-                    print(f"Found IP {response_ip} for MAC {mac_address}")
+                    logger.info(f"Found IP {response_ip} for MAC {mac_address}")
                     return response_ip
             else:
-                print(f"No ARP response for MAC {mac_address}")
+                logger.warning(f"No ARP response for MAC {mac_address}")
 
         except Exception as exception:
-            print(f"Error getting IP from MAC: {exception}")
+            logger.error(f"Error getting IP from MAC: {exception}")
 
         return None
 
@@ -78,7 +85,7 @@ class Server:
         4. Acquires a lock on the target manager to safely access and modify its data structures.
         5. Checks if the source MAC address is in the target manager's list of MAC addresses.
         6. If the conditions are met, increments the packet count and proceeds to upload the packet data to cloud storage.
-        7. Prints the received packet data for informational purposes.
+        7. Logs the received packet data for informational purposes.
         """
 
         if packet.haslayer(IP) and (packet.haslayer(UDP) or packet.haslayer(TCP)):
@@ -89,7 +96,7 @@ class Server:
                 if source_mac in self.target_manager.macs and self.pkt_count < int(PACKETS_PER_FILE):
                     datetime_now = datetime.now()
                     datetime_directory = datetime_now.strftime("%Y-%m-%d")
-                    print("Received packet data:", data_dict)
+                    logger.info("Received packet data:", data_dict)
 
                     self.upload_packet_to_cloud_storage(packet, source_mac, datetime_directory)
 
@@ -135,10 +142,10 @@ class Server:
                 blob = bucket.blob(blob_name)
                 blob.upload_from_string(packet_bytes, content_type='application/octet-stream')
 
-                print(f"Uploaded packet data to {blob_name}")
+                logger.info(f"Uploaded packet data to {blob_name}")
 
         except Exception as e:
-            print(f"Error uploading packet data: {e}")
+            logger.error(f"Error uploading packet data: {e}")
 
 
     def sniff_packets(self):
@@ -160,12 +167,12 @@ class Server:
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_socket.bind((self.ip_address, SERVER_PORT))
-        print("ENTER TARGET MAC ADDRESS TO MONITOR: ")
+        logger.info("ENTER TARGET MAC ADDRESS TO MONITOR: ")
 
         while not self.shutdown_event.is_set():
             try:
                 message, client_address = server_socket.recvfrom(BUFFER_SIZE)
-                print(f"Message from Client {client_address}: {message.decode()}")
+                logger.info(f"Message from Client {client_address}: {message.decode()}")
                 data = json.loads(message.decode())
                 response_message = self.process_client_command(data)
 
@@ -173,7 +180,7 @@ class Server:
                     server_socket.sendto(response_message.encode(), client_address)
 
             except socket.error as e:
-                print(f"Socket error: {e}")
+                logger.error(f"Socket error: {e}")
 
     def process_client_command(self, data):
         """
@@ -218,7 +225,7 @@ class Server:
         sniff_thread.daemon = True
         sniff_thread.start()
 
-        # print("testing server and Sniffer threads")
+        # logger.info("testing server and Sniffer threads")
 
         try:
             server_thread.join()
@@ -230,10 +237,10 @@ class Server:
         """
         Handle the shutdown of the application gracefully.
 
-        Prints a shutdown message and sets the shutdown event to signal
+        Logs a shutdown message and sets the shutdown event to signal
         server and sniffer threads to terminate. Exits the application.
         """
-        print(f"Received signal {signal.Signals(signum).name}. Shutting down gracefully...")
+        logger.info(f"Received signal {signal.Signals(signum).name}. Shutting down gracefully...")
         self.running = False
         self.shutdown_event.set()
         sys.exit(0)

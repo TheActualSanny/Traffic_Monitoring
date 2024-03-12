@@ -10,8 +10,12 @@ from dataclasses import dataclass
 import threading
 import time
 
-logging.basicConfig(level=logging.INFO)
+import logging
+from traffic_logger import logger_setup
+
+logger_setup()
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class FileEventHandler(FileSystemEventHandler):

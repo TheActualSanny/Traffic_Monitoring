@@ -5,6 +5,13 @@ import socket
 import re
 from config import SERVER_PORT, LOOPBACK_ADDRESS
 
+import logging
+from traffic_logger import logger_setup
+
+logger_setup()
+logger = logging.getLogger(__name__)
+
+
 class CommandSender:
     """
     A class to send commands to a server using UDP.
@@ -30,19 +37,19 @@ class CommandSender:
         Send a message to the server using UDP.
         """
         try:
-            print(f"Sending message to Server {LOOPBACK_ADDRESS}:{SERVER_PORT}")
+            logger.info(f"Sending message to Server {LOOPBACK_ADDRESS}:{SERVER_PORT}")
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
             client_socket.sendto(message.encode(), (LOOPBACK_ADDRESS, SERVER_PORT))
 
             response, _ = client_socket.recvfrom(1024)
             decoded_response = response.decode()
-            print(f"Server Response: {decoded_response}")
+            logger.info(f"Server Response: {decoded_response}")
 
             client_socket.close()
 
         except Exception as exception:
-            print(f"Error sending message to the Server: {exception}")
+            logger.error(f"Error sending message to the Server: {exception}")
 
     @staticmethod
     def arg_parser() -> tuple:
@@ -70,7 +77,7 @@ class CommandSender:
             sys.exit(1)
 
         if not CommandSender.is_valid_mac(mac):
-            print("Invalid MAC address format. Please use the format: XX:XX:XX:XX:XX:XX")
+            logger.warning("Invalid MAC address format. Please use the format: XX:XX:XX:XX:XX:XX")
             sys.exit(1)
 
         return cmd, mac
