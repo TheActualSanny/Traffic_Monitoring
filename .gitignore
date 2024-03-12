@@ -163,3 +163,6 @@ utils
 Traffic
 starlit-granite-411219-27be53662159.json
 config.py
+config.ini
+.gitignore
+myconfig.py
