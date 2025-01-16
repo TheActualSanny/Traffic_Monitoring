@@ -8,5 +8,6 @@ urlpatterns = [
     path('remove/', views.remove_target, name = 'remove-mac'),
     path('start/', views.invoke_sniffer, name = 'invoke-sniffer'),
     path('terminate/', views.terminate_sniffer, name = 'terminate-sniffer'),
-    path('update/', views.get_networkifc, name = 'interface-name')
+    path('update/', views.get_networkifc, name = 'interface-name'),
+    path('packets/', views.get_packets, name = 'get-packets')
 ]

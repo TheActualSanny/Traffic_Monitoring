@@ -2,11 +2,11 @@ from scapy.all import get_if_list
 from .traffic.main import start_sniffing
 from .forms import MacForm, SnifferForm
 from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import TargetInstances
+from .models import TargetInstances, PacketInstances
 
 # These will probably be written as attributes
 # Instead of function_called, I can directly check the shutdown_event to see if its set or not.
@@ -39,7 +39,7 @@ def invoke_sniffer(request):
                 main_sniffer.packets_per_file = packet_limit
                 main_sniffer.target_manager.macs.clear()
                 main_sniffer.shutdown_event.clear()
-                main_sniffer.target_manager.update_dir(traffic_dir)
+                # main_sniffer.target_manager.update_dir(traffic_dir)
                 main_sniffer.start(interface)
                 messages.success(request, message = 'Successfully started the sniffer!')
             else:
@@ -69,7 +69,7 @@ def add_mac(request):
         Calls the clean method on MacForm() and checks if the passed MAC has the right format.
         If it does, for not, it only loads a success message, but it will write it to our target database.
     '''
-    if not main_sniffer:
+    if not main_sniffer and not function_called:
         TargetInstances.objects.all().delete()
     added_targets = TargetInstances.objects.all()
     if request.method == 'POST':
@@ -110,3 +110,18 @@ def get_networkifc(request) -> JsonResponse:
     if request.method == 'GET':
         interface = get_if_list()[1] 
         return JsonResponse({'interface_name' : interface})
+    
+def get_packets(request) -> JsonResponse:
+    '''
+        The Front-end will make a call to this url to update the packets container dynamically every couple
+        of seconds
+    '''
+    if request.method == 'GET':
+        packets = list(PacketInstances.objects.all().values())
+        for packet in packets:
+            packet.pop('packet_data')
+        print(packets)
+        if packets:
+            return JsonResponse({'packets' : packets})
+        else:
+            return JsonResponse({'packets' : None})
