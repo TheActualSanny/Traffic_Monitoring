@@ -25,7 +25,7 @@ class TargetManager:
         with self.lock:
             if mac not in self.macs:
                 self.macs.add(mac)
-                os.makedirs(self.storage_directory, exist_ok = True)
+                # os.makedirs(self.storage_directory, exist_ok = True)
                 return f'MAC {mac} has been added to the target list.'
             else:
                 return f'MAC {mac} is already set as a target.'
@@ -36,7 +36,7 @@ class TargetManager:
         '''
         with self.lock:
             if mac in self.macs:
-                os.remove(f'{self.storage_directory}/{mac}.pcap')
+                # os.remove(f'{self.storage_directory}/{mac}.pcap')
                 self.macs.remove(mac)
                 return f'MAC {mac} has been removed from the target list.'
             else:

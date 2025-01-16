@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP
 from .targets import TargetManager
-
+from tools.models import PacketInstances, TargetInstances
 
 @dataclass
 class Server:
@@ -18,6 +18,15 @@ class Server:
     packet_count: int = 0
     found_packets: list = field(default_factory = list)
 
+
+    def write_record(self, mac_address, dst_mac, source_ip, destination_ip, data) -> None:
+        '''
+            This will write every target packet to the PacketInstances model, which will then be used
+            to render all of them on the client side using node.js
+        '''
+        target_mac = TargetInstances.objects.get(mac_address = mac_address)
+        PacketInstances.objects.create(corresponding_target = target_mac, src_ip = source_ip,
+                                       dst_ip = destination_ip, packet_data = data)
 
     def write(self, packet):
         '''
@@ -46,9 +55,9 @@ class Server:
                 with self.target_manager.lock:
                     if mac_address in self.target_manager.macs and self.packet_count < self.packets_per_file:
                         print(f'Found packet!: {mac_address}')
-                        finalized_packet = {'MAC' : mac_address, 'IP' : ip_address, 'packet_data' : raw(packet)}
-                        self.write(packet)
-                        self.found_packets.append(finalized_packet)
+                        # self.write(packet)
+                        self.write_record(mac_address, packet[Ether].dst, ip_address, packet[IP].dst, raw(packet))
+
 
     def sniff_packets(self, interface):
         '''
