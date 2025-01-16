@@ -1,0 +1,27 @@
+body {
+    height: 100vh;
+    width: 100%;
+    background-image: linear-gradient(45deg, #A9F1DF , #FFBBBB);
+}
+
+button {
+    transition: background-color 0.46s ease;
+    border-radius: 10px;
+}
+
+.container {
+    text-align: center;
+    font-weight: bold;
+}
+
+#begin:hover {
+    background-color: #3AC57E;
+    color: white;
+    font-weight: bold;
+}
+
+#terminate:hover {
+    background-color: #CA3560;
+    color: white;
+    font-weight: bold;
+}

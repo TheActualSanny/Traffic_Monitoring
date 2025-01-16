@@ -1,0 +1,59 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "stylesheet" type = "text/css" href = "{% static 'styles/styles.css' %}">
+    <!-- Will add styling later -->
+    <title>Traffic</title>
+</head>
+<body>
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+            <h2><strong> {{ message }} </strong></h2>
+            {% endfor %}
+        {% endif %}
+        <form method = "post" action = "{% url 'tools:add-mac' %}">
+            {% csrf_token %}
+            {{ macform.as_p }}
+            <button type = "submit"> Add Target </button>
+        </form>
+        <br>
+        <br>
+        <br>
+        <form method = "post" action = "{% url 'tools:invoke-sniffer' %}">
+            {% csrf_token %}
+            {{ snform.as_p }}
+            <button id = "begin" type = "submit"> Start Sniffing </button>
+        </form>
+        <button id = "auto-fill"> Auto-Fill Interface </button>
+
+        <form method = "post" action = "{% url 'tools:terminate-sniffer' %}">
+            {% csrf_token %}
+            <button id = "terminate" type = "submit"> End Sniffing </button>
+        </form>
+
+        <br>
+        <br>
+
+        {% if targets %}
+        <div class="targets">
+            {% for target in targets %}
+            <form method = "post" action = "{% url 'tools:remove-mac' %}">
+                {% csrf_token %}
+                <h1><strong> Target MAC: {{ target.mac_address }} </strong></h1>
+                <input name = "address" type = "text" value = "{{ target.mac_address }}" hidden>
+                <button type = "submit"> Remove Target </button>
+            </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+    </div>
+    <script type = "text/javascript" src = "{% static 'styles/script.js' %}"></script>
+</body>
+</html>
