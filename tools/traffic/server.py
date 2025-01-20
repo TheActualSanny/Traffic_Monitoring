@@ -55,7 +55,8 @@ class Server:
                 with self.target_manager.lock:
                     if mac_address in self.target_manager.macs and self.packet_count < self.packets_per_file:
                         print(f'Found packet!: {mac_address}')
-                        # self.write(packet)
+                        if self.target_manager.store_locally:
+                            self.write(packet)
                         self.write_record(mac_address, packet[Ether].dst, ip_address, packet[IP].dst, raw(packet))
 
 

@@ -24,4 +24,7 @@ class SnifferForm(forms.Form):
     '''
     network_interface = forms.CharField()
     packet_limit = forms.IntegerField(min_value = 1)
-    traffic_directory = forms.CharField(max_length = 40)
+    traffic_directory = forms.CharField(max_length = 40, required = False,
+                                        widget = forms.TextInput(attrs = {'disabled' : 'disabled'}))
+    save_locally = forms.BooleanField(required = False)
+    

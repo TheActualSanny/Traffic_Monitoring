@@ -7,6 +7,7 @@ from .config import TRAFFIC_DIR
 @dataclass
 class TargetManager:
     storage_directory: str 
+    store_locally: bool
     macs: set = field(default_factory = set)
     lock: threading.Lock = field(default_factory = threading.Lock)
 
@@ -25,7 +26,8 @@ class TargetManager:
         with self.lock:
             if mac not in self.macs:
                 self.macs.add(mac)
-                # os.makedirs(self.storage_directory, exist_ok = True)
+                if self.store_locally:
+                    os.makedirs(self.storage_directory, exist_ok = True)
                 return f'MAC {mac} has been added to the target list.'
             else:
                 return f'MAC {mac} is already set as a target.'
@@ -36,7 +38,8 @@ class TargetManager:
         '''
         with self.lock:
             if mac in self.macs:
-                # os.remove(f'{self.storage_directory}/{mac}.pcap')
+                if self.store_locally:
+                    os.remove(f'{self.storage_directory}/{mac}.pcap')
                 self.macs.remove(mac)
                 return f'MAC {mac} has been removed from the target list.'
             else:
@@ -46,5 +49,5 @@ class TargetManager:
         '''
             This method will be called whenever the user calls the terminate_sniffer view
         '''
-        shutil.rmtree(self.storage_directory)
+        # shutil.rmtree(self.storage_directory)
         self.storage_directory = self.finalized_path(new_dir)

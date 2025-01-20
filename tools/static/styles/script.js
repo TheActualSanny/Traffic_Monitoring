@@ -10,6 +10,15 @@ function auto_fill() {
     .catch(err => console.log(err))
 }
 
+function enable_storage() {
+    if (document.getElementById('id_save_locally').checked){
+        document.getElementById('id_traffic_directory').disabled = false;
+    }
+    else {
+        document.getElementById('id_traffic_directory').disabled = true;
+    }
+}
+
 function load_packets() {
    fetch("/packets", {method : 'GET'})
    .then(res => {
@@ -30,9 +39,14 @@ function load_packets() {
         }
     }
     }
-    )
+    ).catch(err => {
+        clearInterval(loadPackets);
+        console.log('Closed the server...');
+    })
 }
 
 var btn = document.getElementById("auto-fill");
+var storeLocally = document.getElementById('id_save_locally');
 const loadPackets = setInterval(load_packets, 2000);
 btn.addEventListener("click", auto_fill);
+storeLocally.addEventListener('change', enable_storage);

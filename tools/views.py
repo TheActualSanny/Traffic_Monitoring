@@ -29,10 +29,12 @@ def invoke_sniffer(request):
         if sniffer_form.is_valid():
             packet_limit = sniffer_form.cleaned_data.get('packet_limit')
             interface = sniffer_form.cleaned_data.get('network_interface')
+            local_storage = sniffer_form.cleaned_data.get('save_locally')
             traffic_dir = sniffer_form.cleaned_data.get('traffic_directory')
+            print(traffic_dir)
             if not function_called and not main_sniffer:
                 main_sniffer = start_sniffing(packet_limit = packet_limit, network_interface = interface,
-                                              initial_dir = traffic_dir)
+                                              initial_dir = traffic_dir, local_storage = local_storage)
                 function_called = True
                 messages.success(request, message = 'Successfully started the sniffer!')
             elif main_sniffer:
@@ -40,7 +42,8 @@ def invoke_sniffer(request):
                 main_sniffer.packets_per_file = packet_limit
                 main_sniffer.target_manager.macs.clear()
                 main_sniffer.shutdown_event.clear()
-                # main_sniffer.target_manager.update_dir(traffic_dir)
+                if local_storage:
+                    main_sniffer.target_manager.update_dir(traffic_dir)
                 main_sniffer.start(interface)
                 messages.success(request, message = 'Successfully started the sniffer!')
             else:
