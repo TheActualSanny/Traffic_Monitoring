@@ -12,7 +12,8 @@ from .models import TargetInstances, PacketInstances
 # Instead of function_called, I can directly check the shutdown_event to see if its set or not.
 function_called = False
 main_sniffer = None
-
+last_index = 0
+packet_caught = False
 
 def invoke_sniffer(request):
     '''
@@ -116,12 +117,30 @@ def get_packets(request) -> JsonResponse:
         The Front-end will make a call to this url to update the packets container dynamically every couple
         of seconds
     '''
+
+    global last_index
+    global packet_caught
+        
     if request.method == 'GET':
-        packets = list(PacketInstances.objects.all().values())
-        for packet in packets:
-            packet.pop('packet_data')
-        print(packets)
-        if packets:
-            return JsonResponse({'packets' : packets})
-        else:
-            return JsonResponse({'packets' : None})
+        first = None
+        if not packet_caught:
+            initial_record = PacketInstances.objects.first()
+            if initial_record:
+                last_index = initial_record.id
+                first = initial_record.id
+                packet_caught = True
+        if last_index:
+            if first == last_index:
+                packets = list(PacketInstances.objects.filter(id__gte = last_index).values())
+                last_index += len(packets) - 1
+            else:
+                packets = list(PacketInstances.objects.filter(id__gt = last_index).values())
+                last_index += len(packets)
+            
+            if packets:
+                for packet in packets:
+                    packet.pop('packet_data')
+                print(packets)
+                return JsonResponse({'packets' : packets})
+        
+        return JsonResponse({'packets' : None})

@@ -34,8 +34,5 @@ function load_packets() {
 }
 
 var btn = document.getElementById("auto-fill");
-var sniffer = document.getElementById('invoke-form');
-var snifferButton = sniffer.querySelector('#begin');
-
-snifferButton.addEventListener("click", load_packets);
+const loadPackets = setInterval(load_packets, 2000);
 btn.addEventListener("click", auto_fill);
