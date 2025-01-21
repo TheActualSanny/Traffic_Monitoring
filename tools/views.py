@@ -13,7 +13,7 @@ from .models import TargetInstances, PacketInstances
 function_called = False
 main_sniffer = None
 last_index = 0
-packet_caught = False
+
 
 def invoke_sniffer(request):
     '''
@@ -73,18 +73,21 @@ def add_mac(request):
         Calls the clean method on MacForm() and checks if the passed MAC has the right format.
         If it does, for not, it only loads a success message, but it will write it to our target database.
     '''
+    if not request.session.get('last_index'):
+        request.session['last_index'] = 0
+
     if not main_sniffer and not function_called:
         TargetInstances.objects.all().delete()
     added_targets = TargetInstances.objects.all()
     if request.method == 'POST':
         mac_form = MacForm(request.POST)
         if mac_form.is_valid():
-            try:
+            if main_sniffer and not main_sniffer.shutdown_event.is_set():
                 mac_address = mac_form.cleaned_data.get('target_mac')
                 main_sniffer.target_manager.add_target(mac_address)
                 TargetInstances.objects.create(mac_address = mac_address)
                 messages.success(request, message = 'Successfully added a target MAC!')
-            except:
+            else:
                 messages.error(request, message = 'Start the sniffer before you add a target.')
             
     else:
@@ -120,26 +123,26 @@ def get_packets(request) -> JsonResponse:
         The Front-end will make a call to this url to update the packets container dynamically every couple
         of seconds
     '''
+    global main_sniffer
 
-    global last_index
-    global packet_caught
-        
     if request.method == 'GET':
         first = None
-        if not packet_caught:
-            initial_record = PacketInstances.objects.first()
-            if initial_record:
-                last_index = initial_record.id
-                first = initial_record.id
-                packet_caught = True
-        if last_index:
+        if main_sniffer and not main_sniffer.packet_caught:
+            potential = PacketInstances.objects.all()
+            if potential:
+                id = potential.first().id
+                request.session['last_index'] = id
+                first = id
+                main_sniffer.packet_caught = True
+        last_index = request.session['last_index']
+
+        if request.session['last_index']:
+            packets = list()
             if first == last_index:
-                packets = list(PacketInstances.objects.filter(id__gte = last_index).values())
-                last_index += len(packets) - 1
-            else:
-                packets = list(PacketInstances.objects.filter(id__gt = last_index).values())
-                last_index += len(packets)
-            
+                packets.append(potential.values()[0])
+            new_packets = list(PacketInstances.objects.filter(id__gt = last_index).values())
+            packets.extend(new_packets)
+            request.session['last_index'] += len(new_packets)
             if packets:
                 for packet in packets:
                     packet.pop('packet_data')

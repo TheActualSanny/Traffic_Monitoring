@@ -15,6 +15,7 @@ class Server:
     packets_per_file: int 
     shutdown_event: threading.Event = field(default_factory = threading.Event)
     running: bool = True
+    packet_caught: bool = False
     packet_count: int = 0
     found_packets: list = field(default_factory = list)
 
@@ -105,7 +106,7 @@ class Server:
     def parse_client_request(self, request) -> str:
         '''
             The methods necessary for parsing command line args will not be necessary in the web app
-            Hence, we will prob only use this method instead of creating a whole new Client class lolz
+            Hence, we will prob only use this method instead of creating a whole new Client class
             dont know for sure, but this is most likely the case
         
         '''
