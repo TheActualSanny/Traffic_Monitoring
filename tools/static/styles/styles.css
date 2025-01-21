@@ -25,3 +25,20 @@ button {
     color: white;
     font-weight: bold;
 }
+
+#packet-list {
+    background-color: grey;
+    display: flex;
+    border-radius: 35px;
+    width: 700px;
+    margin: auto;
+    height: 400px;
+    justify-content: center;
+}
+
+#packet-instance {
+    background-color: #806798;
+    height: 50px;
+    border-color: black;
+    border-radius: 50px;
+}
