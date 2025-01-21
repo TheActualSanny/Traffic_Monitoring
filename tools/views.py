@@ -12,7 +12,6 @@ from .models import TargetInstances, PacketInstances
 # Instead of function_called, I can directly check the shutdown_event to see if its set or not.
 function_called = False
 main_sniffer = None
-last_index = 0
 
 
 def invoke_sniffer(request):
