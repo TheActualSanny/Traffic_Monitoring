@@ -10,6 +10,7 @@
     <title>Traffic</title>
 </head>
 <body>
+    <a href = "{% url 'tools:lookups' %}" id = "link-anchor"> Lookups </a>
     <div class="container">
         {% if messages %}
             {% for message in messages %}
@@ -19,9 +20,13 @@
         <form method = "post" action = "{% url 'tools:add-mac' %}">
             {% csrf_token %}
             {{ macform.as_p }}
-            <button type = "submit"> Add Target </button>
+            <button  id = "add-target" type = "submit"> Add Target </button>
         </form>
         <br>
+        <br>
+        <div id = "select-field">
+
+        </div>
         <br>
         <br>
         <form method = "post" id = "invoke-form"  action = "{% url 'tools:invoke-sniffer' %}">
@@ -45,7 +50,7 @@
                 {% csrf_token %}
                 <h1><strong> Target MAC: {{ target.mac_address }} </strong></h1>
                 <input name = "address" type = "text" value = "{{ target.mac_address }}" hidden>
-                <button type = "submit"> Remove Target </button>
+                <button  id = "remove-target"  type = "submit"> Remove Target </button>
             </form>
             {% endfor %}
         </div>

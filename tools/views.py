@@ -1,18 +1,21 @@
+import json
 from scapy.all import get_if_list
 from .traffic.main import start_sniffing
+from .lookups.main import target_lookup
 from .forms import MacForm, SnifferForm
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from .models import TargetInstances, PacketInstances
+from .models import TargetInstances, PacketInstances, LookupInstances
 
 # These will probably be written as attributes
 # Instead of function_called, I can directly check the shutdown_event to see if its set or not.
 function_called = False
 main_sniffer = None
-
+lookup_manager = None
+data_fetched = False
 
 def invoke_sniffer(request):
     '''
@@ -20,8 +23,7 @@ def invoke_sniffer(request):
         For now, user can only set necessary params for the sniffing to proceed.
         However, there will also be a way to stop the sniffing process to re-configure the params.
     '''
-    global main_sniffer
-    global function_called
+    global main_sniffer, function_called
 
     if request.method == 'POST':
         sniffer_form = SnifferForm(request.POST)
@@ -60,6 +62,7 @@ def terminate_sniffer(request):
         if function_called:
             function_called = False
             main_sniffer.shutdown_handler()
+            main_sniffer.available_macs.clear()
             TargetInstances.objects.all().delete()
             messages.success(request, message = 'Successfully terminated the sniffer!')
         else:
@@ -105,7 +108,40 @@ def remove_target(request):
         main_sniffer.target_manager.delete_target(address)
     return redirect('tools:add-mac')
 
+def lookup_page(request):
+    '''
+        This will be the main view for the lookups. A seperate method will be made in order to initiate the searching
+    '''
+    if not request.session.get('lookup_last_index'):
+            request.session['lookup_last_index'] = 0
+    lookups = LookupInstances.objects.all()
+    if lookups:
+        lookups.delete()
+    return render(request, 'tools/name_lookups.html', context = {})
 
+def initiate_lookups(request):
+    '''
+        Starts searching for accounts.
+        We also set a session variable here in order to load the new records correctly.
+    '''
+    global lookup_manager
+
+    if request.method == 'POST':
+        target = request.POST.get('target')
+        lookups = LookupInstances.objects.all()
+        if lookups:
+            lookups.delete()
+        if target:
+            if not lookup_manager:
+                lookup_manager = target_lookup(target)
+            else:
+                lookup_manager.main_lookup(target)
+            messages.success(request, message = 'Started searching...')
+        else:
+            messages.error(request, message = 'Input a target username!')
+    return redirect('tools:lookups')
+
+# TODO: Automatically fetch current user's interface.
 def get_networkifc(request) -> JsonResponse:
     '''
         This will be a URL to which the Front-end will send a GET request
@@ -135,7 +171,7 @@ def get_packets(request) -> JsonResponse:
                 main_sniffer.packet_caught = True
         last_index = request.session['last_index']
 
-        if request.session['last_index']:
+        if last_index:
             packets = list()
             if first == last_index:
                 packets.append(potential.values()[0])
@@ -149,3 +185,78 @@ def get_packets(request) -> JsonResponse:
                 return JsonResponse({'packets' : packets})
         
         return JsonResponse({'packets' : None})
+    
+
+def get_lookups(request) -> JsonResponse:
+    '''
+        The front-end sends a GET request to this view and we get latest found records regarding lookups. 
+    '''
+    global lookup_manager, data_fetched
+
+    if request.method == 'GET':
+        initial_index = None
+        if lookup_manager and not data_fetched:
+            potential_data = LookupInstances.objects.all()
+            if potential_data:
+                id = potential_data.first().id
+                request.session['lookup_last_index'] = id
+                initial_index = id
+                data_fetched = True
+        last_index = request.session['lookup_last_index']
+
+        if last_index:
+            fetched = list()
+            if last_index == initial_index:
+                fetched.append(potential_data.values()[0])
+            new_data = list(LookupInstances.objects.filter(id__gt = last_index).values())
+            fetched.extend(new_data)
+            request.session['lookup_last_index'] += len(new_data)
+            finalized_data = list()
+            if fetched:
+                for record in fetched:
+                    if record.get('profile_pic_url'):
+                        finalized_data.append({record.get('profile_url') : 'Account found!'})   
+                    else:
+                        finalized_data.append({record.get('profile_url') : 'Account either private or it doesnt exist'})
+                print(finalized_data)
+                return JsonResponse({'data' : finalized_data})     
+        return JsonResponse({'data' : None})  
+    
+
+def get_macs(request):
+    '''
+        The Front-end will make requests to this every couple of seconds in order to add the macs 
+        on the website
+    '''
+    if request.method == 'GET':
+        if main_sniffer:
+            return JsonResponse({'entries' : main_sniffer.available_macs})
+        return JsonResponse({'' : None})
+
+
+def manage_target(request):
+    '''
+        This method will be called everytime the user selects a new target within the list of MACs.
+        It is necessary to update the available_macs dict in order for the Front-end to
+        color the button if it was checked.
+    '''
+    global main_sniffer
+
+    if request.method == 'POST':
+        request_data = json.loads(request.body)
+        mac = request_data.get('mac_address')
+        new_status = request_data.get('selected')
+
+        for entry in main_sniffer.available_macs:
+            if entry.get('mac') == mac:
+                if new_status:
+                    TargetInstances.objects.create(mac_address = mac)
+                    main_sniffer.target_manager.add_target(mac)
+                    entry['selected'] = True
+                else:
+                    TargetInstances.objects.filter(mac_address = mac).delete()
+                    main_sniffer.target_manager.delete_target(mac)
+                    entry['selected'] = False
+
+        print(main_sniffer.available_macs)
+        return HttpResponse('')

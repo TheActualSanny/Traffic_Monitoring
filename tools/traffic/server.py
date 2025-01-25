@@ -3,7 +3,7 @@ import threading
 import socket
 import json
 from dataclasses import dataclass, field
-from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP
+from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP, ARP, srp
 from .targets import TargetManager
 from tools.models import PacketInstances, TargetInstances
 
@@ -17,7 +17,16 @@ class Server:
     running: bool = True
     packet_caught: bool = False
     packet_count: int = 0
-    found_packets: list = field(default_factory = list)
+    available_macs: list = field(default_factory = list)
+
+
+    def add_mac(self, mac_address: str) -> None:
+        '''
+            This will be used to write a new entry into out list
+        '''
+        finalized_instance = {'mac' : mac_address, 'selected' : False, 
+                              'loaded' : False}
+        self.available_macs.append(finalized_instance)
 
 
     def write_record(self, mac_address, dst_mac, source_ip, destination_ip, data) -> None:
@@ -26,7 +35,7 @@ class Server:
             to render all of them on the client side using node.js
         '''
         target_mac = TargetInstances.objects.get(mac_address = mac_address)
-        PacketInstances.objects.create(corresponding_target = target_mac, src_ip = source_ip,
+        PacketInstances.objects.create(corresponding_target = target_mac, dst_mac = dst_mac, src_ip = source_ip,
                                        dst_ip = destination_ip, packet_data = data)
 
     def write(self, packet):
@@ -53,6 +62,14 @@ class Server:
         if not self.shutdown_event.is_set():
             if packet.haslayer(IP) and (packet.haslayer(UDP) or packet.haslayer(TCP)):
                 mac_address, ip_address = packet[Ether].src, packet[IP].src
+                contains = False
+                for entry in self.available_macs:
+                    if entry.get('mac') == mac_address:
+                        contains = True
+                        break
+                if not contains:
+                    self.add_mac(mac_address)
+
                 with self.target_manager.lock:
                     if mac_address in self.target_manager.macs and self.packet_count < self.packets_per_file:
                         print(f'Found packet!: {mac_address}')
