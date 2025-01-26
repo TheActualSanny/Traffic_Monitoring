@@ -157,8 +157,8 @@ def get_networkifc(request) -> JsonResponse:
         Considering that the first interface name in the list is usually 'lo', we get the second element.
     '''
     if request.method == 'GET':
-        interface = get_if_list()[1] 
-        return JsonResponse({'interface_name' : interface})
+        interface = get_if_list() 
+        return JsonResponse({'interfaces' : interface})
     
 def get_packets(request) -> JsonResponse:
     '''

@@ -52,14 +52,26 @@ function loadMacs() {
     })
 }
 
-function auto_fill() {
+
+
+function interfaceField() {
     fetch("/update", {method : "GET"})
     .then(res => {
         return res.json();
     })
     .then(data => {
         console.log(data);
-        document.getElementById("id_network_interface").value = data.interface_name;
+        interfaces = data.interfaces
+        mainDiv = document.getElementById('interface-field');
+        for (let i = 0; i < interfaces.length; i++){
+            new_interface = document.createElement('button');
+            new_interface.textContent = interfaces[i];
+            new_interface.setAttribute('id', 'interface-instance');
+            mainDiv.appendChild(new_interface);
+            new_interface.addEventListener('click', function() {
+                document.getElementById('id_network_interface').value = interfaces[i];
+            });
+        }
     })
     .catch(err => console.log(err))
 }
@@ -156,11 +168,10 @@ function macaddListeners() {
     }
 
 var addedButtons = [];
-var btn = document.getElementById("auto-fill");
 var storeLocally = document.getElementById('id_save_locally');
 var snifferButton = document.getElementById('begin'); 
 const loadPackets = setInterval(load_packets, 1000);
 const loadingMacs = setInterval(loadMacs, 1000);
 const addListeners = setInterval(macaddListeners, 1001)
-btn.addEventListener("click", auto_fill);
 storeLocally.addEventListener('change', enable_storage);
+document.addEventListener('DOMContentLoaded', interfaceField);

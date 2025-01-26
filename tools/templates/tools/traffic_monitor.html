@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel = "stylesheet" type = "text/css" href = "{% static 'styles/styles.css' %}">
+    <link rel="icon" href="{% static 'styles/favicon.ico' %}" type="image/x-icon">
     <!-- Will add styling later -->
     <title>Traffic</title>
 </head>
@@ -34,7 +35,10 @@
             {{ snform.as_p }}
             <button id = "begin" type = "submit"> Start Sniffing </button>
         </form>
-        <button id = "auto-fill"> Auto-Fill Interface </button>
+        <p><strong> Choose your network interface </strong></p>
+        <div id = "interface-field">
+
+        </div>
 
         <form method = "post" action = "{% url 'tools:terminate-sniffer' %}">
             {% csrf_token %}
