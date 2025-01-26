@@ -2,6 +2,26 @@ function startLoading() {
     var loading = setInterval(loadMacs, 1000);
 }
 
+function removeDynamicMac(address) {
+
+    fetch('/remove/', {method : 'POST', 
+        headers : {
+            'Content-Type' : 'application/json',
+            'X-CSRFToken' : getToken('csrftoken')
+        },
+        body : JSON.stringify({address : address})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data) {
+            window.location.reload();
+        }
+    })
+    .catch(err => {
+        console.log(err);
+    })
+} 
+
 function loadMacs() {
     fetch('/loadmacs', {method : 'GET'})
     .then(res => {
@@ -123,7 +143,12 @@ function macaddListeners() {
                     body : JSON.stringify(postData)
                 })
                 .finally(() => {
-                    loadMacs();
+                    if (selectedValue == 'mac-selected') {
+                        removeDynamicMac(potential_mac);
+                    }
+                    else {
+                        loadMacs();
+                    }
                 })
             });
         

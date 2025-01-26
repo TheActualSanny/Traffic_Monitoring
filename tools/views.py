@@ -103,9 +103,16 @@ def remove_target(request):
         target from the TargetInstances table and redirects to the initial page
     '''
     if request.method == 'POST':
-        address = request.POST.get('address')
+        dynamic_request = False
+        try:
+            address = json.loads(request.body).get('address')
+            dynamic_request = True
+        except:
+            address = request.POST.get('address')
         TargetInstances.objects.filter(mac_address = address).delete()
         main_sniffer.target_manager.delete_target(address)
+        if dynamic_request:
+            return JsonResponse({'success' : True})
     return redirect('tools:add-mac')
 
 def lookup_page(request):
