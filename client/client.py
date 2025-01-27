@@ -13,29 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class CommandSender:
-    """
-    A class to send commands to a server using UDP.
-
-    Methods:
-        is_valid_mac(mac: str) -> bool: Check if the given MAC address has a valid format.
-        send_message_to_server(message: str) -> None: Send a message to the server using UDP.
-        arg_parser() -> Tuple[str, str]: Parse command-line arguments and return the command and MAC address.
-        run() -> None: Run the command sender, parsing arguments and sending commands to the server.
-    """
-
+    """A class to send commands to a server using UDP."""
     @staticmethod
     def is_valid_mac(mac: str) -> bool:
-        """
-        Check if the given MAC address has a valid format.
-        """
         mac_pattern = re.compile(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
         return bool(mac_pattern.match(mac))
 
     @staticmethod
     def send_message_to_server(message: str) -> None:
-        """
-        Send a message to the server using UDP.
-        """
+        """Send a message to the server using UDP."""
         try:
             logger.info(f"Sending message to Server {LOOPBACK_ADDRESS}:{SERVER_PORT}")
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -53,12 +39,7 @@ class CommandSender:
 
     @staticmethod
     def arg_parser() -> tuple:
-        """
-        Parse command-line arguments and return the command and MAC address.
-
-        Returns:
-            Tuple[str, str]: A tuple containing the command and MAC address.
-        """
+        """Parse command-line arguments and return the command and MAC address."""
         parser = argparse.ArgumentParser(description='Send commands to the server.')
         parser.add_argument('-a', metavar="mac", help='add MAC address to the server')
         parser.add_argument('-d', metavar="mac", help='delete MAC address from the server')
@@ -83,9 +64,7 @@ class CommandSender:
         return cmd, mac
 
     def run(self) -> None:
-        """
-        Run the command sender, parsing arguments and sending commands to the server.
-        """
+        """Run the command sender, parsing arguments and sending commands to the server."""
         cmd, mac = CommandSender.arg_parser()
         command = {"cmd": cmd, "mac": mac}
         str_data = json.dumps(command)
