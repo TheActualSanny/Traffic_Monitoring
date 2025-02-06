@@ -30,6 +30,7 @@ def invoke_sniffer(request):
         if sniffer_form.is_valid():
             packet_limit = sniffer_form.cleaned_data.get('packet_limit')
             interface = sniffer_form.cleaned_data.get('network_interface')
+            # TODO: Add options to store pcaps in different databases
             local_storage = sniffer_form.cleaned_data.get('save_locally')
             traffic_dir = sniffer_form.cleaned_data.get('traffic_directory')
             print(traffic_dir)
@@ -149,6 +150,8 @@ def initiate_lookups(request):
     return redirect('tools:lookups')
 
 # TODO: Automatically fetch current user's interface.
+# Kinda done??
+
 def get_networkifc(request) -> JsonResponse:
     '''
         This will be a URL to which the Front-end will send a GET request
@@ -225,7 +228,6 @@ def get_lookups(request) -> JsonResponse:
                         finalized_data.append({record.get('profile_url') : 'Account found!'})   
                     else:
                         finalized_data.append({record.get('profile_url') : 'Account either private or it doesnt exist'})
-                print(finalized_data)
                 return JsonResponse({'data' : finalized_data})     
         return JsonResponse({'data' : None})  
     
@@ -237,8 +239,11 @@ def get_macs(request):
     '''
     if request.method == 'GET':
         if main_sniffer:
-            return JsonResponse({'entries' : main_sniffer.available_macs})
-        return JsonResponse({'' : None})
+            available_macs = main_sniffer.fetch_macs()
+            print(available_macs)
+            return JsonResponse({'entries' : available_macs})
+        else:
+            return JsonResponse({'entries' : None})
 
 
 def manage_target(request):
@@ -261,9 +266,5 @@ def manage_target(request):
                     main_sniffer.target_manager.add_target(mac)
                     entry['selected'] = True
                 else:
-                    TargetInstances.objects.filter(mac_address = mac).delete()
-                    main_sniffer.target_manager.delete_target(mac)
                     entry['selected'] = False
-
-        print(main_sniffer.available_macs)
         return HttpResponse('')

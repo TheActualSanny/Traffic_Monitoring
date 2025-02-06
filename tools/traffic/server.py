@@ -1,5 +1,7 @@
 import signal
 import threading
+import argparse
+import subprocess
 import socket
 import json
 from dataclasses import dataclass, field
@@ -20,9 +22,40 @@ class Server:
     available_macs: list = field(default_factory = list)
 
 
+    def fetch_macs(self) -> list:
+        '''
+            By utilizing the argparse library, this will execute the "arp-scan -l" command
+            and fetch all of the found MAC addresses.
+            Even though the ARP Scan can be done by using scapy, as it usually doesn't
+            fetch all of the MAC addresses, using this command is the best way to have access to them.
+        '''
+
+        result = subprocess.run(['sudo', 'arp-scan', '-l'], capture_output = True, text = True)
+        seperated_lines = result.stdout.split('\n')
+        local_info = seperated_lines[0]
+        beginning = None 
+        self.available_macs = []
+
+        for i in range(len(local_info)):
+            if local_info[i : i + 3]  == 'MAC':
+                beginning = i + 5
+                break
+        
+        local_mac = {'mac' : local_info[beginning : beginning + 17],
+                    'selected ': False, 'loaded' : False} # We get the local host's MAC address.
+        self.available_macs.append(local_mac)
+
+        for i in range(2, len(seperated_lines) - 4):
+            instance_fields = seperated_lines[i].split()
+            mac_instance = {'mac' : instance_fields[1], 'selected' : False,
+                            'loaded' : False}
+            self.available_macs.append(mac_instance)
+        
+        return self.available_macs
+
     def add_mac(self, mac_address: str) -> None:
         '''
-            This will be used to write a new entry into out list
+            This will be used to write a new entry into our list
         '''
         finalized_instance = {'mac' : mac_address, 'selected' : False, 
                               'loaded' : False}
@@ -63,13 +96,6 @@ class Server:
             if packet.haslayer(IP) and (packet.haslayer(UDP) or packet.haslayer(TCP)):
                 mac_address, ip_address = packet[Ether].src, packet[IP].src
                 contains = False
-                for entry in self.available_macs:
-                    if entry.get('mac') == mac_address:
-                        contains = True
-                        break
-                if not contains:
-                    self.add_mac(mac_address)
-
                 with self.target_manager.lock:
                     if mac_address in self.target_manager.macs and self.packet_count < self.packets_per_file:
                         print(f'Found packet!: {mac_address}')

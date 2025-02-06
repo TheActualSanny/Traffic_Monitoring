@@ -42,6 +42,7 @@ function loadMacs() {
                 else {
                     selectable.setAttribute('id', 'mac-unselected');
                 }
+                macaddListener(selectable);
                 main_div.appendChild(selectable);
             }
         }
@@ -125,26 +126,23 @@ function getToken(name) {
     }
     return tokenValue;
 }
-function macaddListeners() {
-    document.querySelectorAll('.selectable-button').forEach(button => {
-
-            addedButtons.push(button);
+function macaddListener(button) {
             button.addEventListener('click', function() {
                 var potential_mac = this.textContent;
                 console.log(potential_mac);
                 var selectedValue = this.getAttribute('id');
-                console.log('what');
-
                 if (selectedValue == 'mac-unselected'){
                     var postData = {
                         mac_address : potential_mac,
                         selected : true
                     }
+                    button.style.backgroundColor = '#33CC78';
                 } else {
                     var postData = {
                         mac_address : potential_mac,
                         selected : false
                     }
+                    button.style.backgroundColor = '#D32C51';
                 }
 
                 fetch('/managemac/', {method : 'POST', 
@@ -163,15 +161,13 @@ function macaddListeners() {
                     }
                 })
             });
-        
-    });
     }
 
 var addedButtons = [];
 var storeLocally = document.getElementById('id_save_locally');
 var snifferButton = document.getElementById('begin'); 
+var mac_invoker = document.getElementById('fetch-invoker');
+mac_invoker.addEventListener('click', loadMacs);
 const loadPackets = setInterval(load_packets, 1000);
-const loadingMacs = setInterval(loadMacs, 1000);
-const addListeners = setInterval(macaddListeners, 1001)
 storeLocally.addEventListener('change', enable_storage);
 document.addEventListener('DOMContentLoaded', interfaceField);
