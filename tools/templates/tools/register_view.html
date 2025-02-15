@@ -1,0 +1,28 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel = "stylesheet" type = "text/css" href = "{% static 'styles/styles.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+</head>
+<body>
+    <div class = "container">
+        {% if messages %}
+            {% for message in messages %}
+            <h1><strong> {{ message }} </strong></h1>
+            {% endfor %}
+        {% endif %}
+
+        <h1><strong> Welcome to the OSINT collection </strong></h1>
+        <h2> In order to  access the tools, please create an account. </h2>
+        <form method = "post" action = "{% url 'tools:register' %}">
+            {% csrf_token %}
+            {{ register.as_p }}
+            <button type = "submit"> Register </button>
+        </form>        
+    </div>
+</body>
+</html>

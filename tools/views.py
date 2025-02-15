@@ -2,12 +2,13 @@ import json
 from scapy.all import get_if_list
 from .traffic.main import start_sniffing
 from .lookups.main import target_lookup
-from .forms import MacForm, SnifferForm
+from .forms import MacForm, SnifferForm, RegisterForm
 from django.shortcuts import render, redirect, HttpResponse
 from django.http import JsonResponse
 from django.contrib import messages
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from .models import TargetInstances, PacketInstances, LookupInstances
 
 # These will probably be written as attributes
@@ -16,6 +17,28 @@ function_called = False
 main_sniffer = None
 lookup_manager = None
 data_fetched = False
+
+
+def register(request):
+    '''
+        The view reponsible for registering a new user. We will utilize Django forms for this.
+        When it comes to the web interface, session based authentication is implemented.
+        Though, for the API, the user will have to first get an API key (which will be a JWT token in our case)
+        and will use it for sending requests to the endpoints.
+    '''
+
+    if request.method == 'POST':
+        register_form = RegisterForm(request.POST)
+        if register_form.is_valid():
+            username = register_form.cleaned_data.get('username')
+            password = register_form.cleaned_data.get('password')
+            new_user = User.objects.create_user(username = username, password = password)
+            login(request, new_user)
+            return redirect('tools:add-mac')
+    else:
+        register_form = RegisterForm()        
+    return render(request, 'tools/register_view.html', context = {'register' : register_form})
+
 
 def invoke_sniffer(request):
     '''
@@ -141,16 +164,13 @@ def initiate_lookups(request):
             lookups.delete()
         if target:
             if not lookup_manager:
-                lookup_manager = target_lookup(target)
+                lookup_manager = target_lookup(target, api = False)
             else:
                 lookup_manager.main_lookup(target)
             messages.success(request, message = 'Started searching...')
         else:
             messages.error(request, message = 'Input a target username!')
     return redirect('tools:lookups')
-
-# TODO: Automatically fetch current user's interface.
-# Kinda done??
 
 def get_networkifc(request) -> JsonResponse:
     '''
