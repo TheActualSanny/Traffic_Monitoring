@@ -11,7 +11,10 @@
     <title>Traffic</title>
 </head>
 <body>
-    <a href = "{% url 'tools:lookups' %}" id = "link-anchor"> Lookups </a>
+    <div id = "links">
+        <a href = "{% url 'tools:lookups' %}"> Lookups </a> <br>
+        <a href = "{% url 'tools:logout' %}" > Logout </a>
+    </div>
     <div class="container">
         {% if messages %}
             {% for message in messages %}
@@ -28,6 +31,7 @@
         <div id = "select-field">
 
         </div>
+        <button id = "fetch-invoker"> Fetch Macs </button>
         <br>
         <br>
         <form method = "post" id = "invoke-form"  action = "{% url 'tools:invoke-sniffer' %}">

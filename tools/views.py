@@ -40,6 +40,28 @@ def register(request):
     return render(request, 'tools/register_view.html', context = {'register' : register_form})
 
 
+def login_view(request):
+    '''
+        The view responsible for logging the user in.
+    '''
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        potential_user = authenticate(username = username, password = password)
+        if potential_user:
+            login(request, potential_user)
+            return redirect('tools:add-mac')
+        else:
+            messages.error(request, message = 'Incorrect account credentials')
+    return render(request, 'tools/login_view.html')
+
+def logout_view(request):
+    '''
+        The view responsible for logging the user out.
+    '''
+    logout(request)
+    return redirect('tools:login')
+
 def invoke_sniffer(request):
     '''
         View responsible for calling the start_sniffing function.
