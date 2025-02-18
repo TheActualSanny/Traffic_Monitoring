@@ -100,6 +100,8 @@ def invoke_sniffer(request):
                 main_sniffer.shutdown_event.clear()
                 if local_storage:
                     main_sniffer.target_manager.update_dir(traffic_dir)
+                main_sniffer.update_kafka(new_broker = kafka_broker, new_topic = kafka_topic,
+                                          new_group_id = kafka_group_id, new_kafka_directory = kafka_directory)
                 main_sniffer.start(interface)
                 messages.success(request, message = 'Successfully started the sniffer!')
             else:
