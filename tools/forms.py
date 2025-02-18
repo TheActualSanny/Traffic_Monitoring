@@ -27,7 +27,11 @@ class SnifferForm(forms.Form):
     traffic_directory = forms.CharField(max_length = 40, required = False,
                                         widget = forms.TextInput(attrs = {'disabled' : 'disabled'}))
     save_locally = forms.BooleanField(required = False)
-    
+    kafka_broker = forms.CharField()
+    kafka_topic = forms.CharField()
+    kafka_group_id = forms.CharField()
+    kafka_directory = forms.CharField(required = False)
+
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget = forms.PasswordInput)
     password_confirm = forms.CharField(widget = forms.PasswordInput, label = 'Confirm Password')

@@ -81,10 +81,16 @@ def invoke_sniffer(request):
             # TODO: Add options to store pcaps in different databases
             local_storage = sniffer_form.cleaned_data.get('save_locally')
             traffic_dir = sniffer_form.cleaned_data.get('traffic_directory')
-            print(traffic_dir)
+            kafka_topic = sniffer_form.cleaned_data.get('kafka_topic')
+            kafka_broker = sniffer_form.cleaned_data.get('kafka_broker')
+            kafka_group_id = sniffer_form.cleaned_data.get('kafka_group_id')
+            kafka_directory = sniffer_form.cleaned_data.get('kafka_directory')
+
             if not function_called and not main_sniffer:
                 main_sniffer = start_sniffing(packet_limit = packet_limit, network_interface = interface,
-                                              initial_dir = traffic_dir, local_storage = local_storage)
+                                              initial_dir = traffic_dir, local_storage = local_storage,
+                                              initial_broker = kafka_broker, initial_topic = kafka_topic,
+                                              initial_group_id = kafka_group_id, initial_directory = kafka_directory)
                 function_called = True
                 messages.success(request, message = 'Successfully started the sniffer!')
             elif main_sniffer:
