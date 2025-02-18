@@ -1,14 +1,19 @@
 import signal
 import threading
 import argparse
+import os
 import subprocess
 import socket
+from datetime import datetime
 import json
+from typing import Optional
 from dataclasses import dataclass, field
+from kafka import KafkaConsumer, KafkaProducer
 from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP, ARP, srp
 from .kafka_components.kafka_methods import create_consumer, create_producer
 from .targets import TargetManager
 from tools.models import PacketInstances, TargetInstances
+
 
 @dataclass
 class Server:
@@ -16,14 +21,29 @@ class Server:
     event: threading.Event
     target_manager: TargetManager
     packets_per_file: int 
+    kafka_consumer : KafkaConsumer
+    kafka_producer: KafkaProducer
+    kafka_topic: str
+    kafka_directory: str
     shutdown_event: threading.Event = field(default_factory = threading.Event)
     running: bool = True
     packet_caught: bool = False
     packet_count: int = 0
     available_macs: list = field(default_factory = list)
-    kafka_consumer : ...
-    kafka_producer: ...
 
+    
+    def update_kafka(self, new_broker: str, new_topic: str, new_group_id: str,
+                     new_kafka_directory: str) -> None:
+        '''
+            Whenever user terminates the sniffer and restarts it
+            with completely new kafka parameters, this will be ran.
+        '''
+        self.kafka_topic = new_topic
+        self.kafka_directory = f'{os.getcwd()}/{new_kafka_directory}'
+        self.kafka_consumer = create_consumer(kafka_broker = new_broker, kafka_topic = new_topic,
+                                              group_id = new_group_id)
+        self.kafka_producer = create_producer(kafka_broker = new_broker, kafka_topic = new_topic)
+        
 
     def fetch_macs(self) -> list:
         '''
@@ -65,6 +85,36 @@ class Server:
         self.available_macs.append(finalized_instance)
 
 
+    def send_kafka_message(self, message: dict) -> None:
+        '''
+            Sends packet data as a message to our kafka broker.
+        '''
+        try:
+            self.kafka_producer.send(self.kafka_topic, message)
+            print(f'Sent message to kafka: {message}')
+        except Exception as err:
+            print(f'Exception occured during execution: {err}')
+
+    def consume_kafka_messages(self):
+        message_count = 0  
+        for message in self.kafka_consumer:
+            try:
+                message_value = message.value
+                print(f"Received: {message_value}")
+
+                # Ensure the directory exists before saving the message
+                file_dir = os.path.dirname(os.path.join(self.kafka_directory, f"message_{message_count}.json"))
+                os.makedirs(file_dir, exist_ok=True)
+
+                # Store the received message in the file
+                file_name = os.path.join(self.kafka_directory, f"message_{message_count}.json")
+                with open(file_name, 'w') as file:
+                    json.dump(message_value, file, indent=4)
+
+                message_count += 1
+            except Exception as e:
+                print(f"Error processing Kafka message: {e}")
+
     def write_record(self, mac_address, dst_mac, source_ip, destination_ip, data) -> None:
         '''
             This will write every target packet to the PacketInstances model, which will then be used
@@ -102,6 +152,13 @@ class Server:
                 with self.target_manager.lock:
                     if mac_address in self.target_manager.macs and self.packet_count < self.packets_per_file:
                         print(f'Found packet!: {mac_address}')
+                        packet_data = {
+                            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                            'mac_address': mac_address,
+                            'packet_summary': str(packet.summary())
+                        }
+            
+                        self.send_kafka_message(packet_data)
                         if self.target_manager.store_locally:
                             self.write(packet)
                         self.write_record(mac_address, packet[Ether].dst, ip_address, packet[IP].dst, raw(packet))
@@ -125,6 +182,9 @@ class Server:
         try:
             sniffer_thread = threading.Thread(target = self.sniff_packets, args = (interface,))
             sniffer_thread.daemon = True
+            kafka_consumer = threading.Thread(target = self.consume_kafka_messages)
+            kafka_consumer.daemon = True
+            kafka_consumer.start()
             sniffer_thread.start()
         except KeyboardInterrupt:
             self.shutdown_handler()
@@ -176,5 +236,4 @@ class Server:
         self.running = False
         self.shutdown_event.set()
 
-    def update(*params):
-        pass
+    
