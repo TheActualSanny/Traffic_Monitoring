@@ -1,17 +1,14 @@
 import json
-import redis
 from scapy.all import get_if_list
 from .traffic.main import start_sniffing
 from .lookups.main import target_lookup
 from .handle_cache import load_cache
-from .forms import MacForm, SnifferForm, RegisterForm
+from .forms import MacForm, SnifferForm
 from django.core.cache import cache
 from django.shortcuts import render, redirect, HttpResponse
 from django.http import JsonResponse
 from django.contrib import messages
-from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from .models import TargetInstances, PacketInstances, LookupInstances
 
 # These will probably be written as attributes
@@ -21,49 +18,6 @@ main_sniffer = None
 lookup_manager = None
 data_fetched = False
 
-
-def register(request):
-    '''
-        The view reponsible for registering a new user. We will utilize Django forms for this.
-        When it comes to the web interface, session based authentication is implemented.
-        Though, for the API, the user will have to first get an API key (which will be a JWT token in our case)
-        and will use it for sending requests to the endpoints.
-    '''
-
-    if request.method == 'POST':
-        register_form = RegisterForm(request.POST)
-        if register_form.is_valid():
-            username = register_form.cleaned_data.get('username')
-            password = register_form.cleaned_data.get('password')
-            new_user = User.objects.create_user(username = username, password = password)
-            login(request, new_user)
-            return redirect('tools:add-mac')
-    else:
-        register_form = RegisterForm()        
-    return render(request, 'tools/register_view.html', context = {'register' : register_form})
-
-
-def login_view(request):
-    '''
-        The view responsible for logging the user in.
-    '''
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        potential_user = authenticate(username = username, password = password)
-        if potential_user:
-            login(request, potential_user)
-            return redirect('tools:add-mac')
-        else:
-            messages.error(request, message = 'Incorrect account credentials')
-    return render(request, 'tools/login_view.html')
-
-def logout_view(request):
-    '''
-        The view responsible for logging the user out.
-    '''
-    logout(request)
-    return redirect('tools:login')
 
 def invoke_sniffer(request):
     '''

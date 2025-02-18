@@ -4,9 +4,9 @@ from django.urls import path
 app_name = 'tools'
 
 urlpatterns = [
-    path('', views.register, name = 'register'),
-    path('login/', views.login_view, name = 'login'),
-    path('logout/', views.logout_view, name = 'logout'),
+    # path('', views.register, name = 'register'),
+    # path('login/', views.login_view, name = 'login'),
+    # path('logout/', views.logout_view, name = 'logout'),
     path('tools/', views.add_mac, name = 'add-mac'),
     path('remove/', views.remove_target, name = 'remove-mac'),
     path('start/', views.invoke_sniffer, name = 'invoke-sniffer'),
