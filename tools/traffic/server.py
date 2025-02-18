@@ -6,6 +6,7 @@ import socket
 import json
 from dataclasses import dataclass, field
 from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP, ARP, srp
+from .kafka_components.kafka_methods import create_consumer, create_producer
 from .targets import TargetManager
 from tools.models import PacketInstances, TargetInstances
 
@@ -20,6 +21,8 @@ class Server:
     packet_caught: bool = False
     packet_count: int = 0
     available_macs: list = field(default_factory = list)
+    kafka_consumer : ...
+    kafka_producer: ...
 
 
     def fetch_macs(self) -> list:
@@ -172,3 +175,6 @@ class Server:
         print('\n Shutting down...')
         self.running = False
         self.shutdown_event.set()
+
+    def update(*params):
+        pass

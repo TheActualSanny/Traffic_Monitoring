@@ -1,8 +1,11 @@
 import json
+import redis
 from scapy.all import get_if_list
 from .traffic.main import start_sniffing
 from .lookups.main import target_lookup
+from .handle_cache import load_cache
 from .forms import MacForm, SnifferForm, RegisterForm
+from django.core.cache import cache
 from django.shortcuts import render, redirect, HttpResponse
 from django.http import JsonResponse
 from django.contrib import messages
@@ -178,18 +181,23 @@ def initiate_lookups(request):
         We also set a session variable here in order to load the new records correctly.
     '''
     global lookup_manager
-
+    
     if request.method == 'POST':
         target = request.POST.get('target')
         lookups = LookupInstances.objects.all()
         if lookups:
             lookups.delete()
         if target:
-            if not lookup_manager:
-                lookup_manager = target_lookup(target, api = False)
+            if not cache.get(target):
+                cache.set(target, [], timeout = 300)
+                if not lookup_manager:
+                    lookup_manager = target_lookup(target, api = False)
+                else:
+                    lookup_manager.main_lookup(target, api = False)
+                messages.success(request, message = 'Started searching...')
             else:
-                lookup_manager.main_lookup(target)
-            messages.success(request, message = 'Started searching...')
+                lookup_records = load_cache(target)
+                request.session[target] = lookup_records
         else:
             messages.error(request, message = 'Input a target username!')
     return redirect('tools:lookups')
@@ -266,10 +274,7 @@ def get_lookups(request) -> JsonResponse:
             finalized_data = list()
             if fetched:
                 for record in fetched:
-                    if record.get('profile_pic_url'):
-                        finalized_data.append({record.get('profile_url') : 'Account found!'})   
-                    else:
-                        finalized_data.append({record.get('profile_url') : 'Account either private or it doesnt exist'})
+                    finalized_data.append({record.get('profile_url') : record.get('status')})   
                 return JsonResponse({'data' : finalized_data})     
         return JsonResponse({'data' : None})  
     

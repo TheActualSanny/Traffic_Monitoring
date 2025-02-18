@@ -3,7 +3,7 @@ from . import server
 from .targets import TargetManager
 from threading import Thread, Event
 
-def start_sniffing(packet_limit, network_interface, initial_dir, local_storage) -> None:
+def start_sniffing(packet_limit: int, network_interface: str, initial_dir: str, local_storage: str) -> None:
     '''
         This function will be called inside views.py to start the background sniffing thread.
         It is written in a function so that the user can first set params, and then call the function which
