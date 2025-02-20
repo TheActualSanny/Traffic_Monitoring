@@ -23,3 +23,5 @@ class PacketInstances(models.Model):
     src_ip = models.CharField(max_length = 40)
     dst_ip = models.CharField(max_length = 40)
     packet_data = models.BinaryField(max_length = 1024)
+
+
