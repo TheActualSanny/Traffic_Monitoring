@@ -13,6 +13,9 @@ from scapy.all import  wrpcap, sniff, raw, Ether, IP, UDP, TCP, ARP, srp
 from .kafka_components.kafka_methods import create_consumer, create_producer
 from .targets import TargetManager
 from tools.models import PacketInstances, TargetInstances
+from tools.consumers import PacketConsumer
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 @dataclass
@@ -30,8 +33,11 @@ class Server:
     packet_caught: bool = False
     packet_count: int = 0
     available_macs: list = field(default_factory = list)
+    chunk_ammount: int = 1
+    last_index: int = 0
+    chunk_counter: int = 0
+    first_packet: bool = True
 
-    
     def update_kafka(self, new_broker: str, new_topic: str, new_group_id: str,
                      new_kafka_directory: str) -> None:
         '''
@@ -43,6 +49,41 @@ class Server:
         self.kafka_consumer = create_consumer(kafka_broker = new_broker, kafka_topic = new_topic,
                                               group_id = new_group_id)
         self.kafka_producer = create_producer(kafka_broker = new_broker, kafka_topic = new_topic)
+    
+    # must add caching
+    def update_page_dynamically(self) -> None:
+        '''
+            Essentially, when a user loads the traffic monitoring page, a connection
+            with the server using sockets will be established. 
+        '''
+        layer = get_channel_layer()
+
+        if self.first_packet:
+            potential = PacketInstances.objects.all()
+            if potential:
+                id = potential.first().id
+                self.last_index = id
+                self.packet_caught = True
+
+        packets = list()
+        if self.first_packet:
+            packets.append(potential.values()[0])
+            self.first_packet = False
+        new_packets = list(PacketInstances.objects.filter(id__gt = self.last_index).values())
+        packets.extend(new_packets)
+        self.last_index += len(new_packets)
+        if packets:
+            for packet in packets:
+                packet.pop('packet_data')
+            print(packets)
+
+        async_to_sync(layer.group_send)(
+                'client',
+                {
+                    'type' : 'send_packets',
+                    'packets' : packets
+                },
+            )
         
 
     def fetch_macs(self) -> list:
@@ -52,7 +93,7 @@ class Server:
             Even though the ARP Scan can be done by using scapy, as it usually doesn't
             fetch all of the MAC addresses, using this command is the best way to have access to them.
         '''
-
+        layer = get_channel_layer()
         result = subprocess.run(['sudo', 'arp-scan', '-l'], capture_output = True, text = True)
         seperated_lines = result.stdout.split('\n')
         local_info = seperated_lines[0]
@@ -73,7 +114,7 @@ class Server:
             mac_instance = {'mac' : instance_fields[1], 'selected' : False,
                             'loaded' : False}
             self.available_macs.append(mac_instance)
-        
+    
         return self.available_macs
 
     def add_mac(self, mac_address: str) -> None:
@@ -157,11 +198,14 @@ class Server:
                             'mac_address': mac_address,
                             'packet_summary': str(packet.summary())
                         }
-            
+                        self.chunk_counter += 1
+                        self.write_record(mac_address, packet[Ether].dst, ip_address, packet[IP].dst, raw(packet))
+                        if self.chunk_counter % self.chunk_ammount == 0:
+                            self.update_page_dynamically()
                         self.send_kafka_message(packet_data)
                         if self.target_manager.store_locally:
                             self.write(packet)
-                        self.write_record(mac_address, packet[Ether].dst, ip_address, packet[IP].dst, raw(packet))
+                        
 
 
     def sniff_packets(self, interface):
@@ -235,5 +279,6 @@ class Server:
         print('\n Shutting down...')
         self.running = False
         self.shutdown_event.set()
-
+        self.first_packet = True
+        self.packet_count = 0
     

@@ -86,31 +86,6 @@ function enable_storage() {
     }
 }
 
-function load_packets() {
-   fetch("/packets", {method : 'GET'})
-   .then(res => {
-    return res.json();
-   }).then(a => {
-    if (a.packets) {
-        arr = a.packets;
-        console.log(arr);
-        mainDiv = document.getElementById('packet-list');
-        for(let i = 0; i < arr.length; i++){
-                packetData = document.createElement('p');
-                packetData.textContent = `Packet SRC IP: ${arr[i].src_ip}\n DST IP: ${arr[i].dst_ip}`;
-                console.log(packetData.textContent);
-                packetInstance = document.createElement('div');
-                packetInstance.setAttribute('id', 'packet-instance');
-                packetInstance.appendChild(packetData);
-                mainDiv.appendChild(packetInstance);
-        }
-    }
-    }
-    ).catch(err => {
-        clearInterval(loadPackets);
-        console.log('Closed the server...');
-    })
-}
 
 function getToken(name) {
     var tokenValue = null;
@@ -163,11 +138,33 @@ function macaddListener(button) {
             });
     }
 
-var addedButtons = [];
+let url = `ws://${window.location.host}/ws/socket-server/`;
+const chatSocket = new WebSocket(url);
+chatSocket.onmessage = function(e) {
+    let data = JSON.parse(e.data);
+    if (data.packets) {
+        arr = data.packets;
+        console.log(arr);
+        mainDiv = document.getElementById('packet-list');
+        for(let i = 0; i < arr.length; i++){
+                packetData = document.createElement('p');
+                packetData.textContent = `Packet SRC IP: ${arr[i].src_ip}\n DST IP: ${arr[i].dst_ip}`;
+                console.log(packetData.textContent);
+                packetInstance = document.createElement('div');
+                packetInstance.setAttribute('id', 'packet-instance');
+                packetInstance.appendChild(packetData);
+                mainDiv.appendChild(packetInstance);
+        }
+    }
+    else {
+        console.log(data);
+    }
+}
+
+var addedButtons = [];  
 var storeLocally = document.getElementById('id_save_locally');
 var snifferButton = document.getElementById('begin'); 
 var mac_invoker = document.getElementById('fetch-invoker');
 mac_invoker.addEventListener('click', loadMacs);
-const loadPackets = setInterval(load_packets, 1000);
 storeLocally.addEventListener('change', enable_storage);
 document.addEventListener('DOMContentLoaded', interfaceField);

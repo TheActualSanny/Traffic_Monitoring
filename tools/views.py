@@ -175,39 +175,7 @@ def get_networkifc(request) -> JsonResponse:
         interface = get_if_list() 
         return JsonResponse({'interfaces' : interface})
     
-def get_packets(request) -> JsonResponse:
-    '''
-        The Front-end will make a call to this url to update the packets container dynamically every couple
-        of seconds
-    '''
-    global main_sniffer
 
-    if request.method == 'GET':
-        first = None
-        if main_sniffer and not main_sniffer.packet_caught:
-            potential = PacketInstances.objects.all()
-            if potential:
-                id = potential.first().id
-                request.session['last_index'] = id
-                first = id
-                main_sniffer.packet_caught = True
-        last_index = request.session['last_index']
-
-        if last_index:
-            packets = list()
-            if first == last_index:
-                packets.append(potential.values()[0])
-            new_packets = list(PacketInstances.objects.filter(id__gt = last_index).values())
-            packets.extend(new_packets)
-            request.session['last_index'] += len(new_packets)
-            if packets:
-                for packet in packets:
-                    packet.pop('packet_data')
-                print(packets)
-                return JsonResponse({'packets' : packets})
-        
-        return JsonResponse({'packets' : None})
-    
 
 def get_lookups(request) -> JsonResponse:
     '''
@@ -221,7 +189,7 @@ def get_lookups(request) -> JsonResponse:
             potential_data = LookupInstances.objects.all()
             if potential_data:
                 id = potential_data.first().id
-                request.session['lookup_last_index'] = id
+                request.session['l ookup_last_index'] = id
                 initial_index = id
                 data_fetched = True
         last_index = request.session['lookup_last_index']
