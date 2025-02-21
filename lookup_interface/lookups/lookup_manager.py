@@ -5,6 +5,8 @@ from .tiktok import TikTokLookups
 from .snapchat import SnapchatLookups
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 load_dotenv()
 
@@ -34,7 +36,6 @@ class LookupManager:
             threads to join.
         '''
         
-
     def main_lookup(self, username: str, api: bool) -> None:
         '''
             The main method, which will call the .lookup() function of all of the managers.
@@ -47,3 +48,5 @@ class LookupManager:
         if api:
             for thread in threads:
                 thread.join()
+    
+

@@ -8,6 +8,8 @@ from .lookup_interface import LookupsInterface
 from .constants import SnapAPI_URL, HEADERS_DICT, SNAPCHAT_URL
 from .logger import main_logger
 from lookup_interface.handle_cache import update_cache
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class SnapchatLookups(LookupsInterface):
     '''
@@ -29,12 +31,13 @@ class SnapchatLookups(LookupsInterface):
         if data.get('success'):
             user_data = data.get('data').get('info')
             profile_pic = user_data.get('profilePictureUrl')
+            status = "Accound found!"
             instance = LookupInstances.objects.create(username = target, profile_pic_url = profile_pic,
-                                           profile_url = url, status = 'Account found!')
+                                           profile_url = url, status = status)
         else:
+            status = "Account doesn't exist!"
             instance = LookupInstances.objects.create(username = target, profile_pic_url = None,
-                                           profile_url = url, status = "Account doesn't exist!")
-        if not api:
-            with lock:
-                update_cache(instance)
+                                           profile_url = url, status = status)
+        LookupsInterface.send_lookups({url : status})
+        self.call_update(api, lock, instance)
             

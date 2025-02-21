@@ -7,6 +7,8 @@ from lookup_interface.models import LookupInstances
 from .lookup_interface import LookupsInterface
 from lookup_interface.handle_cache import update_cache
 from .logger import main_logger
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 load_dotenv()
 
@@ -38,11 +40,9 @@ class TikTokLookups(LookupsInterface):
         if user_data:
             profile_pic = user_data.get('user').get('avatarThumb')
         status = 'Account found!' if profile_pic else "Account private or doesn't exist!"
-
+        LookupsInterface.send_lookups({finalized_url : status})
         instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = profile_pic,
                                                   profile_url = finalized_url)
-        if not api:
-            with lock:
-                update_cache(instance)
+        self.call_update(api, lock, instance)
         
 

@@ -9,6 +9,8 @@ from .constants import INSTAGRAM_URL, HEADERS_DICT, JSONType
 from .lookup_interface import LookupsInterface
 from lookup_interface.models import LookupInstances
 from lookup_interface.handle_cache import update_cache
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 load_dotenv()
 
@@ -57,15 +59,17 @@ class InstagramLookups(LookupsInterface):
             status = "Account found but it's private."
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = None,
                                                       profile_url = finalized_url)
-            if not api:
-                update_cache(isinstance)
+            self.call_update(api, lock, instance)
+            LookupsInterface.send_lookups({finalized_url: status})
+
             return {finalized_url : "Account found but it's private."}
         elif potential:
             status = "Account not found!"
             instance = LookupInstances.objects.create(username = target, status = status,profile_pic_url = None,
                                                       profile_url = finalized_url)
-            if not api:
-                update_cache(isinstance)
+            self.call_update(api, lock, instance)
+
+            LookupsInterface.send_lookups({finalized_url : status})
             return {finalized_url : 'Account not found!'}
         else:
             status = "Account found!"
@@ -73,8 +77,7 @@ class InstagramLookups(LookupsInterface):
             pic_url = actual_data.get('profile_pic_url')
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = pic_url,
                                                       profile_url = finalized_url)
+            LookupsInterface.send_lookups({finalized_url : status})
             print({finalized_url : "Account found!"})
-            if not api:
-                with lock:
-                    update_cache(instance)
+            self.call_update(api, lock, instance)
             return {finalized_url : "Account found!"}           

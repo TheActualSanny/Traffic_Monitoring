@@ -1,0 +1,35 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "stylesheet" type = "text/css" href = "{% static 'styles/styles.css' %}">
+    <title>Lookups</title>
+    <div class="container">
+        <a href = "{% url 'tools:add-mac' %}" id = "link-anchor"> Traffic Monitoring </a>
+        {% if messages %}
+            {% for message in messages %}
+                <h1><strong> {{ message }} </strong></h1>
+            {% endfor %}
+        {% endif %}
+
+        <h2><strong> Name Lookup </strong></h2>
+        <p><strong> Input the target's username. For now. the program will only do Instagram and Twitter Lookups. </strong></p>
+        <form method = "post" action = "{% url 'tools:initiate-lookups' %}">
+            {% csrf_token %}
+            <input type = "text" name = "target" placeholder = "Input target...">
+            <button id = "initiate-lookups" type = "submit"><strong> Search </strong></button>
+        </form>
+        <br>
+        <div id = "accounts">
+
+        </div>
+    </div>
+    <script src = "{% static 'styles/lookups.js' %}" type = "text/javascript"></script>
+</head>
+<body>
+    
+</body>
+</html>

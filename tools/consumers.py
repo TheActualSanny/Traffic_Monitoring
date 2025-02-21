@@ -15,7 +15,6 @@ class PacketConsumer(WebsocketConsumer):
         self.send(text_data = json.dumps({'msg' : 'success'}))
 
     def disconnect(self, close_code):
-        self.send(text_data = json.dumps({'test' : 'yes'}))
         self.channel_layer.group_discard('client', self.channel_name)
 
     def send_packets(self, event):
