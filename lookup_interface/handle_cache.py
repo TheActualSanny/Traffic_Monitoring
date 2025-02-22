@@ -2,6 +2,7 @@ import json
 from django.core.cache import cache
 from django.conf import settings
 from .models import LookupInstances
+from .lookups.lookup_class_interface import LookupsInterface
 
 def update_cache(lookup_instance) -> None:
     '''
@@ -22,17 +23,17 @@ def update_cache(lookup_instance) -> None:
     print(f'Name: {username} \n  Data-Type: {type(cached_data)}  \n Data: {len(cached_data)} \n URL: {lookup_instance.profile_url}')
 
 
-def load_cache(username: str) -> list:
+def convert_cache(data: list) -> str:
     '''
         If data about a certain lookup is cached already,
         we call this function. It will loop through the cached dictionaries
-        and respond a list of corresponding LookupInstances that we can then pass to the front-end.
+        and will transform them into the desired: url : status format and return it as a list
+        for it to be sent as a context variable to the template.
+
     '''
-    cached_data = json.loads(cache.get(username))
     final_lookups = []
-    for elem in cached_data:
-        record = LookupInstances.objects.get(id = elem['id'])
-        final_lookups.append(record)
-    return final_lookups
-
-
+    for elem in data:
+        url = elem['profile_url']
+        status = elem['status']
+        final_lookups.append({url : status})
+    return json.dumps(final_lookups)

@@ -5,8 +5,9 @@ import threading
 from typing import Dict, Any
 from dotenv import load_dotenv
 from .logger import main_logger
+from .update_script import call_update
 from .constants import INSTAGRAM_URL, HEADERS_DICT, JSONType
-from .lookup_interface import LookupsInterface
+from .lookup_class_interface import LookupsInterface
 from lookup_interface.models import LookupInstances
 from lookup_interface.handle_cache import update_cache
 from channels.layers import get_channel_layer
@@ -59,17 +60,17 @@ class InstagramLookups(LookupsInterface):
             status = "Account found but it's private."
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = None,
                                                       profile_url = finalized_url)
-            self.call_update(api, lock, instance)
-            LookupsInterface.send_lookups({finalized_url: status})
+            call_update(api, lock, instance)
+            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
 
             return {finalized_url : "Account found but it's private."}
         elif potential:
             status = "Account not found!"
             instance = LookupInstances.objects.create(username = target, status = status,profile_pic_url = None,
                                                       profile_url = finalized_url)
-            self.call_update(api, lock, instance)
+            call_update(api, lock, instance)
 
-            LookupsInterface.send_lookups({finalized_url : status})
+            LookupsInterface.send_lookups({finalized_url : status}, cached = False)
             return {finalized_url : 'Account not found!'}
         else:
             status = "Account found!"
@@ -77,7 +78,7 @@ class InstagramLookups(LookupsInterface):
             pic_url = actual_data.get('profile_pic_url')
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = pic_url,
                                                       profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url : status})
+            LookupsInterface.send_lookups({finalized_url : status}, cached = False)
             print({finalized_url : "Account found!"})
-            self.call_update(api, lock, instance)
+            call_update(api, lock, instance)
             return {finalized_url : "Account found!"}           

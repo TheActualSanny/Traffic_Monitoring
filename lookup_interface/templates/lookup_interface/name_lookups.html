@@ -28,6 +28,15 @@
         </div>
     </div>
     <script src = "{% static 'styles/lookups.js' %}" type = "text/javascript"></script>
+    {% if cached_data %}
+            <script>
+                data = JSON.parse("{{ cached_data|escapejs }}");
+
+                for (let i = 0; i < data.length; i++){
+                    insertLookup(data[i]);
+                }
+            </script>
+    {% endif %}
 </head>
 <body>
     

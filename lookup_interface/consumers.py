@@ -18,3 +18,7 @@ class LookupConsumer(WebsocketConsumer):
     def send_lookups(self, event):
         new_lookups = event['lookup_data']
         self.send(text_data = json.dumps({'lookup_data' : new_lookups}))
+
+    def send_cached_lookups(self, event):
+        new_lookups = event['cached_lookup_data']
+        self.send(text_data = json.dumps({'cached_lookup_data' : new_lookups}))

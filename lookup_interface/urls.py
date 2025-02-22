@@ -5,6 +5,5 @@ app_name = 'lookup_interface'
 
 urlpatterns = [
     path('lookup_page/', views.lookup_page, name = 'lookups'),
-    path('initiate/', views.initiate_lookups, name = 'initiate-lookups'),
-    path('lookup_records/', views.get_lookups, name = 'get-lookups'),
+    path('initiate/', views.initiate_lookups, name = 'initiate-lookups')
 ]

@@ -5,7 +5,8 @@ import threading
 from dotenv import load_dotenv
 from .logger import main_logger
 from .constants import TWITTER_URL, HEADERS_DICT, TwitAPI_URL, JSONType
-from .lookup_interface import LookupsInterface
+from .lookup_class_interface import LookupsInterface
+from .update_script import call_update
 from lookup_interface.models import LookupInstances
 from lookup_interface.handle_cache import update_cache
 from channels.layers import get_channel_layer
@@ -50,13 +51,13 @@ class TwitterLookups(LookupsInterface):
             profile_pic = results.get('legacy').get('profile_image_url_https')
             LookupInstances.objects.create(username = target, status = status, profile_pic_url = profile_pic,
                                            profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url: status})
-            self.call_update(api, lock, instance)
+            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
+            call_update(api, lock, instance)
             print({finalized_url : 'Account found!'})
             return {finalized_url : 'Account found!'}
         else:
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = None,
                                            profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url: status})
-            self.call_update(api, lock, instance)
+            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
+            call_update(api, lock, instance)
             return {finalized_url : 'Account doesnt exist!'}

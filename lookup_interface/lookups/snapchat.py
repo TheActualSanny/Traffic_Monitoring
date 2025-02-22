@@ -2,9 +2,10 @@ import os
 import json
 import requests
 import threading
+from .update_script import call_update
 from lookup_interface.models import LookupInstances
 from dotenv import load_dotenv
-from .lookup_interface import LookupsInterface
+from .lookup_class_interface import LookupsInterface
 from .constants import SnapAPI_URL, HEADERS_DICT, SNAPCHAT_URL
 from .logger import main_logger
 from lookup_interface.handle_cache import update_cache
@@ -38,6 +39,6 @@ class SnapchatLookups(LookupsInterface):
             status = "Account doesn't exist!"
             instance = LookupInstances.objects.create(username = target, profile_pic_url = None,
                                            profile_url = url, status = status)
-        LookupsInterface.send_lookups({url : status})
-        self.call_update(api, lock, instance)
+        LookupsInterface.send_lookups({url : status}, cached = False)
+        call_update(api, lock, instance)
             
