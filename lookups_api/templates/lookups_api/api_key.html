@@ -1,0 +1,29 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "stylesheet" type =  "text/css" href = "{% static 'styles/styles.css' %}">
+    <title>OSINT Key</title>
+</head>
+<body>
+    <div class = "container">
+        {% if messages %}
+            {% for message in messages %}
+                <h1 class = "message"><strong> {{ message }} </strong></h1>
+            {% endfor %}
+        {% endif %}
+        <h1> OSINT API Key </h1>
+        <h2> In order to send requests to the API endpoints, you must first </h2>
+        <h2> get the API Key to authorize. Please input your email address here and  </h2>
+        <h2> it will be sent to you. </h2>
+        <form method = "post" action = "{% url 'lookups_api:send_key' %}">
+            {% csrf_token %}
+            {{ email_form.as_p }}
+            <button type = "submit" id = "begin"> Send Key </button>
+        </form>
+    </div>
+</body>
+</html>
