@@ -1,12 +1,19 @@
 body {
     height: 100vh;
     width: 100%;
-    background-image: linear-gradient(45deg, #A9F1DF , #FFBBBB);
+    color: white;
+    background-image: linear-gradient(45deg, #5F0F40 , #310E68);
+}
+
+input {
+    border-radius: 10px;
 }
 
 button {
     transition: background-color 0.46s ease;
     border-radius: 10px;
+    color: white;
+    background-color: #2F1641;
 }
 
 .container {
@@ -14,14 +21,86 @@ button {
     font-weight: bold;
 }
 
-#begin:hover {
+#begin:hover, #add-target:hover, #initiate-lookups:hover {
     background-color: #3AC57E;
     color: white;
     font-weight: bold;
 }
 
-#terminate:hover {
+#auto-fill:hover {
+    background: #4AA1B5;
+    color: white;
+    font-weight: bold;
+}
+
+#terminate:hover, #remove-target:hover {
     background-color: #CA3560;
     color: white;
+    font-weight: bold;
+}
+
+#packet-list, #accounts, #select-field {
+    background-color: grey;
+    opacity: 0.6;
+    display: flex;
+    border-radius: 35px;
+    width: 700px;
+    margin: auto;
+    height: 400px;
+    justify-content: center;
+}
+
+#interface-field {
+    background-color: grey;
+    opacity: 0.6;
+    display: flex;
+    border-radius: 35px;
+    width: 500px;
+    margin: auto;
+    height: 40px;
+    justify-content: center;
+}
+
+#interface-instance {
+    background-color: #474FB8;
+    width: 40px;
+    height: 40px;
+}
+
+#packet-instance, #lookup-instance, #mac-unselected {
+    background-color: #647de3;
+    height: 50px;
+    display: inline-block;
+    padding: 20px;
+    border-color: black;
+    border-radius: 50px;
+}
+
+#mac-unselected {
+    background-color: #D32C51;
+    height: 70px;
+    width: 150px;
+    display: inline-block;
+    padding: 20px;
+    border-color: black;
+    border-radius: 7px;
+}
+
+
+#mac-selected {
+    background-color: #33CC78;
+    height: 50px;
+    display: inline-block;
+    padding: 20px;
+    border-color: black;
+    border-radius: 7px;
+}
+
+
+#link-anchor {
+    color: white;
+    top: 0;
+    right: 0;
+    position: absolute;
     font-weight: bold;
 }
