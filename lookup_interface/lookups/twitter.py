@@ -51,13 +51,13 @@ class TwitterLookups(LookupsInterface):
             profile_pic = results.get('legacy').get('profile_image_url_https')
             LookupInstances.objects.create(username = target, status = status, profile_pic_url = profile_pic,
                                            profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
+            LookupsInterface.send_lookups({finalized_url: status})
             call_update(api, lock, instance)
             print({finalized_url : 'Account found!'})
             return {finalized_url : 'Account found!'}
         else:
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = None,
                                            profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
+            LookupsInterface.send_lookups({finalized_url: status})
             call_update(api, lock, instance)
             return {finalized_url : 'Account doesnt exist!'}

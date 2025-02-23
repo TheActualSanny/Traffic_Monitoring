@@ -19,7 +19,7 @@ class LookupsInterface(ABC):
         pass
         
     @staticmethod   
-    def send_lookups(lookup_data: dict, cached: bool) -> None:
+    def send_lookups(lookup_data: dict) -> None:
         '''
             This will be a static method that will be called 
             whenever the managers finish the lookup data fetching.
@@ -27,17 +27,11 @@ class LookupsInterface(ABC):
             for it to dynamically load the data onto the website.
         '''
         layer = get_channel_layer()
-        if not cached:
-            data = {
-                'type' : 'send_lookups',
-                'lookup_data' : lookup_data
-            }
-        else:
-            data = {
-                'type' : 'send_cached_lookups',
-                'cached_lookup_data' : lookup_data
-            }
-
+        data = {
+            'type' : 'send_lookups',
+            'lookup_data' : lookup_data
+        }
+        
         async_to_sync(layer.group_send)(
             'lookups',
             data

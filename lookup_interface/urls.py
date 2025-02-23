@@ -1,9 +1,9 @@
-from . import views
+from .views import LookupInterface
 from django.urls import path
 
 app_name = 'lookup_interface'
 
 urlpatterns = [
-    path('lookup_page/', views.lookup_page, name = 'lookups'),
-    path('initiate/', views.initiate_lookups, name = 'initiate-lookups')
+    path('lookup_page/', LookupInterface.lookup_page, name = 'lookups'),
+    path('initiate/', LookupInterface.initiate_lookups, name = 'initiate-lookups')
 ]

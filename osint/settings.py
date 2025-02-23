@@ -34,13 +34,19 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tools.apps.ToolsConfig'
+    'tools.apps.ToolsConfig',
+    'user_authentication.apps.UserAuthenticationConfig',
+    'rest_framework',
+    'rest_framework_api_key',
+    'lookup_interface'
 ]
 
 MIDDLEWARE = [
@@ -54,6 +60,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'osint.urls'
+ASGI_APPLICATION = 'osint.asgi.application'
 
 TEMPLATES = [
     {
@@ -87,6 +94,16 @@ DATABASES = {
         'PORT' : os.getenv('PORT')
 
     }
+}
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
 }
 
 

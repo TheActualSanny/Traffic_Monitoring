@@ -39,6 +39,6 @@ class SnapchatLookups(LookupsInterface):
             status = "Account doesn't exist!"
             instance = LookupInstances.objects.create(username = target, profile_pic_url = None,
                                            profile_url = url, status = status)
-        LookupsInterface.send_lookups({url : status}, cached = False)
+        LookupsInterface.send_lookups({url : status})
         call_update(api, lock, instance)
             

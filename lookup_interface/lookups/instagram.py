@@ -61,7 +61,7 @@ class InstagramLookups(LookupsInterface):
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = None,
                                                       profile_url = finalized_url)
             call_update(api, lock, instance)
-            LookupsInterface.send_lookups({finalized_url: status}, cached = False)
+            LookupsInterface.send_lookups({finalized_url: status})
 
             return {finalized_url : "Account found but it's private."}
         elif potential:
@@ -70,7 +70,7 @@ class InstagramLookups(LookupsInterface):
                                                       profile_url = finalized_url)
             call_update(api, lock, instance)
 
-            LookupsInterface.send_lookups({finalized_url : status}, cached = False)
+            LookupsInterface.send_lookups({finalized_url : status})
             return {finalized_url : 'Account not found!'}
         else:
             status = "Account found!"
@@ -78,7 +78,7 @@ class InstagramLookups(LookupsInterface):
             pic_url = actual_data.get('profile_pic_url')
             instance = LookupInstances.objects.create(username = target, status = status, profile_pic_url = pic_url,
                                                       profile_url = finalized_url)
-            LookupsInterface.send_lookups({finalized_url : status}, cached = False)
+            LookupsInterface.send_lookups({finalized_url : status})
             print({finalized_url : "Account found!"})
             call_update(api, lock, instance)
             return {finalized_url : "Account found!"}           

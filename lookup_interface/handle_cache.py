@@ -20,7 +20,7 @@ def update_cache(lookup_instance) -> None:
     cached_data.append(lookup_data)
     updated = json.dumps(cached_data)
     cache.set(username, updated, timeout = 300)
-    print(f'Name: {username} \n  Data-Type: {type(cached_data)}  \n Data: {len(cached_data)} \n URL: {lookup_instance.profile_url}')
+
 
 
 def convert_cache(data: list) -> str:

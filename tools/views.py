@@ -1,8 +1,6 @@
 import json
 from scapy.all import get_if_list
 from .traffic.main import start_sniffing
-# from .lookups.main import target_lookup
-# from .handle_cache import load_cache
 from .forms import MacForm, SnifferForm
 from django.core.cache import cache
 from django.shortcuts import render, redirect, HttpResponse
@@ -10,9 +8,6 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import TargetInstances, PacketInstances
-
-# These will probably be written as attributes
-# Instead of function_called, I can directly check the shutdown_event to see if its set or not.
 
 class TrafficMonitoring:
 
