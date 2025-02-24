@@ -1,0 +1,31 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel = "stylesheet" type = "text/css" href = "{% static 'styles/styles.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <h1> {{ message }} </h1>
+            {% endfor %}
+        {% endif %}
+        <form method = "post" action = "{% url 'authentication:login' %}">
+            {% csrf_token %}
+            <label for = "username"> Username </label>
+            <input type = "text" name = "username">
+            <br>
+            <label for = "password"> Password </label>
+            <input type = "text" name = "password">
+            <br>
+            <button type = "submit"> Login </button>
+        </form>
+        <p><strong> Don't have an account? <a href = "{% url 'authentication:register' %}"> Register! </a></strong></p>
+    </div>
+</body>
+</html>
