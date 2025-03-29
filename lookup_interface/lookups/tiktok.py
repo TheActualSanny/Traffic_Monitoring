@@ -21,20 +21,13 @@ class TikTokLookups(LookupsInterface):
     def __init__(self):
         self._headers = {**HEADERS_DICT, 'x-rapidapi-host' : os.getenv('TIKTOK_APIHost')}
 
-        
-    def send_request(self, username: str) -> JSONType:
-        response = requests.get(TIKTOKAPI_URL, headers = self._headers, params = {'uniqueId' : username})
-        try:
-            return response.json()
-        except err as err:
-            main_logger.error(f'Exception has been raised: {err}')
-    
     def lookup(self, target: str, api: bool, lock : threading.Lock) -> None:
         '''
             The main method responsible for parsing.
             Doesn't return a value as the purpose of the method is to create a new record in the LookupInstances model.
         '''
-        data = self.send_request(target)
+        self._params = {'uniqueId' : target}
+        data = self.send_request(url = TIKTOKAPI_URL,)
         user_data = data.get('userInfo')
         finalized_url = TIKTOK_URL.format(target_name = target)
         profile_pic = None

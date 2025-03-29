@@ -18,16 +18,10 @@ class SnapchatLookups(LookupsInterface):
     '''
     def __init__(self):
         self._headers = {**HEADERS_DICT, 'x-rapidapi-host' : os.getenv('SNAPCHAT_APIHost')}
-
-    def send_request(self, target: str) -> dict:
-        response = requests.get(SnapAPI_URL, headers = self._headers, params = {'username' : target})
-        try:
-            return response.json()
-        except:
-            raise ValueError('Response returned none type.')
         
     def lookup(self, target: str, api: bool, lock: threading.Lock) -> None:
-        data = self.send_request(target)
+        self._params = {'target' : target}
+        data = self.send_request(url = SnapAPI_URL)
         url = SNAPCHAT_URL.format(target_name = target)
         if data.get('success'):
             user_data = data.get('data').get('info')

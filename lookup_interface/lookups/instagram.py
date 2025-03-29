@@ -25,21 +25,6 @@ class InstagramLookups(LookupsInterface):
         self._url = os.getenv('InstaURL')
 
 
-    
-    def send_request(self, username: str) -> JSONType:
-        '''
-            Fetches the User data if found.
-
-            username: The user will pass the target username via the Django view
-        '''
-
-        response = requests.get(self._url, headers = self._headers, params = { 'username_or_id_or_url' : username},
-                                timeout = 7)
-        try:
-            return response.json()
-        except Exception as err:
-            main_logger.error(f'An exception was raised during the fetching process: {err}')
-
         
     def lookup(self, target: str, api: bool, lock: threading.Lock) ->  None:
         '''
@@ -52,8 +37,8 @@ class InstagramLookups(LookupsInterface):
             However, I will refactor this to return some data about the user if found which we will then
             display on the page dynamically via serializing it as JSON data and passing it onto the front-end.
         '''
-
-        json_data = self.send_request(target)
+        self._params = {'username' : target}
+        json_data = self.send_request(url = self._url)
         potential = json_data.get('detail')
         finalized_url = INSTAGRAM_URL.format(target_name = target)
         if potential == 'Private account':

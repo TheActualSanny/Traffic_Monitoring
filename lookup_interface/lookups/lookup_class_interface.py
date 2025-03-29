@@ -1,3 +1,4 @@
+import requests
 from lookup_interface.models import LookupInstances
 from threading import Lock
 from abc import ABC, abstractmethod
@@ -10,9 +11,17 @@ class LookupsInterface(ABC):
         This will be the formal interface for all of our lookup classes.
         it Includes main methods such as send_request() and lookup() 
     '''
-    @abstractmethod
-    def send_request(self):
-        pass
+    def send_request(self,  url: str = None, contains_target: bool = True) -> dict:
+
+        if contains_target:
+            response = requests.get(url, headers = self._headers, params = self._params)
+        else:
+            response = requests.get(url, headers = self._headers)
+    
+        try:
+            return response.json()
+        except requests.JSONDecodeError:
+            pass
 
     @abstractmethod
     def lookup(self):
