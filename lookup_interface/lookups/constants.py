@@ -15,6 +15,7 @@ HEADERS_DICT = {'User-Agent' : os.getenv('UserAgent'),
                 'x-rapidapi-key' : os.getenv('RapidKEY')}
 TIKTOKAPI_URL =  'https://tiktok-api23.p.rapidapi.com/api/user/info'
 TwitAPI_URL = "https://twitter-aio.p.rapidapi.com/user/by/username/{username}"
+IpAPI_URL = "http://ip-api.com/json/{ip_address}"
 SnapAPI_URL = 'https://snapchat3.p.rapidapi.com/getProfile'
 LinkedAPI_URL = 'https://linkedin-data-api.p.rapidapi.com/'
 JSONType = Dict[str, Any]

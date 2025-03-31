@@ -11,10 +11,12 @@ class LookupsInterface(ABC):
         This will be the formal interface for all of our lookup classes.
         it Includes main methods such as send_request() and lookup() 
     '''
-    def send_request(self,  url: str = None, contains_target: bool = True) -> dict:
+    def send_request(self,  url: str = None, contains_target: bool = True, ip_lookup: bool = False) -> dict:
 
         if contains_target:
             response = requests.get(url, headers = self._headers, params = self._params)
+        elif ip_lookup:
+            response = requests.get(url = url)
         else:
             response = requests.get(url, headers = self._headers)
     
