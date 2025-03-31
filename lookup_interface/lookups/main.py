@@ -4,6 +4,7 @@ from .instagram import InstagramLookups
 from .twitter import TwitterLookups
 from .tiktok import TikTokLookups
 from .snapchat import SnapchatLookups
+from .linkedin import LinkedinLookups
 
 lock = threading.Lock()
 
@@ -17,8 +18,10 @@ def target_lookup(target: str, api: bool) -> LookupManager:
     twitter = TwitterLookups()
     tiktok = TikTokLookups()
     snapchat = SnapchatLookups()
+    linkedin = LinkedinLookups()
     lookup_manager = LookupManager(instagram_manager = instagram, twitter_manager = twitter,
-                                   tiktok_manager = tiktok, snapchat_manager = snapchat, lock = lock)
+                                   tiktok_manager = tiktok, snapchat_manager = snapchat, 
+                                   linkedin_manager = linkedin, lock = lock)
 
     lookup_manager.main_lookup(target, api = api)
 

@@ -3,6 +3,7 @@ from .instagram import InstagramLookups
 from .twitter import TwitterLookups
 from .tiktok import TikTokLookups
 from .snapchat import SnapchatLookups
+from .linkedin import LinkedinLookups
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 from channels.layers import get_channel_layer
@@ -28,14 +29,9 @@ class LookupManager:
     twitter_manager: TwitterLookups
     tiktok_manager: TikTokLookups
     snapchat_manager: SnapchatLookups
+    linkedin_manager: LinkedinLookups
     lock: Lock
     
-    def api_lookup(self, username: str) -> None:
-        '''
-            The same exact method as main_lookup, except this waits for the
-            threads to join.
-        '''
-        
     def main_lookup(self, username: str, api: bool) -> None:
         '''
             The main method, which will call the .lookup() function of all of the managers.

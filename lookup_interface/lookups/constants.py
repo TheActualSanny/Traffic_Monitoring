@@ -9,10 +9,12 @@ load_dotenv()
 INSTAGRAM_URL = 'www.instagram.com/{target_name}'
 TWITTER_URL = 'www.x.com/{target_name}'
 TIKTOK_URL = 'www.tiktok.com/@{target_name}'
+LINKEDIN_URL = 'www.linkedin.com/in/{target_name}'
 SNAPCHAT_URL = 'www.snapchat.com/add/{target_name}'
 HEADERS_DICT = {'User-Agent' : os.getenv('UserAgent'), 
                 'x-rapidapi-key' : os.getenv('RapidKEY')}
 TIKTOKAPI_URL =  'https://tiktok-api23.p.rapidapi.com/api/user/info'
 TwitAPI_URL = "https://twitter-aio.p.rapidapi.com/user/by/username/{username}"
 SnapAPI_URL = 'https://snapchat3.p.rapidapi.com/getProfile'
+LinkedAPI_URL = 'https://linkedin-data-api.p.rapidapi.com/'
 JSONType = Dict[str, Any]
