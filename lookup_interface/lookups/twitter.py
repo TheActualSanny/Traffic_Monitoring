@@ -3,6 +3,7 @@ import json
 import os
 import threading
 from dotenv import load_dotenv
+from .custom_logger import handle_class
 from .logger import main_logger
 from .constants import TWITTER_URL, HEADERS_DICT, TwitAPI_URL, JSONType
 from .lookup_class_interface import LookupsInterface
@@ -14,6 +15,7 @@ from asgiref.sync import async_to_sync
 
 load_dotenv()
 
+@handle_class
 class TwitterLookups(LookupsInterface):
     def __init__(self):
         '''

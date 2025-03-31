@@ -5,6 +5,7 @@ import threading
 from typing import Dict, Any
 from dotenv import load_dotenv
 from .logger import main_logger
+from .custom_logger import handle_class
 from .update_script import call_update
 from .constants import INSTAGRAM_URL, HEADERS_DICT, JSONType
 from .lookup_class_interface import LookupsInterface
@@ -15,6 +16,7 @@ from asgiref.sync import async_to_sync
 
 load_dotenv()
 
+@handle_class
 class InstagramLookups(LookupsInterface):
     def __init__(self):
         '''

@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import threading
+from .custom_logger import handle_class
 from .update_script import call_update
 from lookup_interface.models import LookupInstances
 from dotenv import load_dotenv
@@ -12,6 +13,7 @@ from lookup_interface.handle_cache import update_cache
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+@handle_class
 class SnapchatLookups(LookupsInterface):
     '''
         Manages lookups for snapchat accounts.

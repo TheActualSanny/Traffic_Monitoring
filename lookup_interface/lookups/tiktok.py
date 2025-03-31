@@ -8,11 +8,13 @@ from .lookup_class_interface import LookupsInterface
 from .update_script import call_update
 from lookup_interface.handle_cache import update_cache
 from .logger import main_logger
+from .custom_logger import handle_class
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 load_dotenv()
 
+@handle_class
 class TikTokLookups(LookupsInterface):
     '''
         Manages the lookups for TikTok accounts.
@@ -27,7 +29,7 @@ class TikTokLookups(LookupsInterface):
             Doesn't return a value as the purpose of the method is to create a new record in the LookupInstances model.
         '''
         self._params = {'uniqueId' : target}
-        data = self.send_request(url = TIKTOKAPI_URL,)
+        data = self.send_request(url = TIKTOKAPI_URL)
         user_data = data.get('userInfo')
         finalized_url = TIKTOK_URL.format(target_name = target)
         profile_pic = None
